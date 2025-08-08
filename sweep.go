@@ -1,0 +1,1286 @@
+package tesselator
+
+import "fmt"
+
+// Invariants for the Edge Dictionary.
+// - each pair of adjacent edges e2=Succ(e1) satisfies EdgeLeq(e1,e2)
+//   at any valid location of the sweep event
+// - if EdgeLeq(e2,e1) as well (at any valid sweep event), then e1 and e2
+//   share a common endpoint
+// - for each e, e->Dst has been processed, but not e->Org
+// - each edge e satisfies vertLeq(e.Dst,event) && vertLeq(event,e.Org)
+//   where "event" is the current sweep line event.
+// - no edge e has zero length
+//
+// Invariants for the Mesh (the processed portion).
+// - the portion of the mesh left of the sweep line is a planar graph,
+//   ie. there is //some// way to embed it in the plane
+// - no processed edge has zero length
+// - no two processed vertices have identical coordinates
+// - each "inside" region is monotone, ie. can be broken into two chains
+//   of monotonically increasing vertices according to VertLeq(v1,v2)
+//   - a non-invariant: these chains may intersect (very slightly)
+//
+// Invariants for the Sweep.
+// - if none of the edges incident to the event vertex have an activeRegion
+//   (ie. none of these edges are in the edge dictionary), then the vertex
+//   has only right-going edges.
+// - if an edge is marked "fixUpperEdge" (it is a temporary edge introduced
+//   by ConnectRightVertex), then it is the only right-going edge from
+//   its associated vertex.  (This says that these edges exist only
+//   when it is necessary.)
+
+// Because vertices at exactly the same location are merged together
+// before we process the sweep event, some degenerate cases can't occur.
+// However if someone eventually makes the modifications required to
+// merge features which are close together, the cases below marked
+// TOLERANCE_NONZERO will be useful.
+const (
+	undef             = index(-1)
+	TOLERANCE_NONZERO = false
+)
+
+// bucketAllocator provides a simple memory pool for activeRegion objects
+// to reduce garbage collection overhead
+var regionPool = &struct {
+	pool []*activeRegion
+}{}
+
+// newActiveRegion returns a new activeRegion from the pool or creates one if the pool is empty
+func newActiveRegion() *activeRegion {
+	if len(regionPool.pool) > 0 {
+		reg := regionPool.pool[len(regionPool.pool)-1]
+		regionPool.pool = regionPool.pool[:len(regionPool.pool)-1]
+		// Reset fields to default values
+		reg.eUp = nil
+		reg.nodeUp = nil
+		reg.windingNumber = 0
+		reg.inside = false
+		reg.fixUpperEdge = false
+		reg.sentinel = false
+		reg.dirty = false
+		return reg
+	}
+	return &activeRegion{}
+}
+
+// freeActiveRegion returns an activeRegion to the pool
+func freeActiveRegion(reg *activeRegion) {
+	regionPool.pool = append(regionPool.pool, reg)
+}
+
+func assert(cond bool) {
+	if !cond {
+		//panic("tess: assertion error")
+	}
+}
+
+func minf(a, b float) float {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxf(a, b float) float {
+	if a < b {
+		return b
+	}
+	return a
+}
+
+func (e *halfEdge) rFace() *face {
+	return e.Sym.Lface
+}
+
+func (e *halfEdge) setRFace(f *face) {
+	e.Sym.Lface = f
+}
+
+func (e *halfEdge) dst() *vertex {
+	return e.Sym.Org
+}
+
+func (e *halfEdge) setDst(v *vertex) {
+	e.Sym.Org = v
+}
+
+func (e *halfEdge) rPrev() *halfEdge {
+	return e.Sym.Onext
+}
+
+func (e *halfEdge) oPrev() *halfEdge {
+	return e.Sym.Lnext
+}
+
+func (e *halfEdge) lPrev() *halfEdge {
+	return e.Onext.Sym
+}
+
+func (e *halfEdge) dNext() *halfEdge {
+	return e.rPrev().Sym
+}
+
+// below returns the region below this one.
+func (reg *activeRegion) below() *activeRegion {
+	if reg.nodeUp == nil || reg.nodeUp.prev == nil || reg.nodeUp.prev.key == nil {
+		return nil
+	}
+	return reg.nodeUp.prev.key
+}
+
+// above returns the region above this one.
+func (reg *activeRegion) above() *activeRegion {
+	if reg.nodeUp == nil || reg.nodeUp.next == nil || reg.nodeUp.next.key == nil {
+		return nil
+	}
+	return reg.nodeUp.next.key
+}
+
+func adjust(x float) float {
+	if x > 0 {
+		return x
+	}
+	return 0.01
+}
+
+func deleteRegion(tess *tesselator, reg *activeRegion) {
+	if reg.fixUpperEdge {
+		// It was created with zero winding number, so it better be
+		// deleted with zero winding number (ie. it better not get merged
+		// with a real edge).
+		if reg.eUp != nil {
+			assert(reg.eUp.winding == 0)
+		}
+	}
+	if reg.eUp != nil {
+		reg.eUp.activeRegion = nil
+	}
+	if reg.nodeUp != nil {
+		dictDelete(reg.nodeUp)
+	}
+	// Return region to pool
+	freeActiveRegion(reg)
+}
+
+// edgeLeq:
+// Both edges must be directed from right to left (this is the canonical
+// direction for the upper edge of each region).
+//
+// The strategy is to evaluate a "t" value for each edge at the
+// current sweep line position, given by tess.event.  The calculations
+// are designed to be very stable, but of course they are not perfect.
+//
+// Special case: if both edge destinations are at the sweep event,
+// we sort the edges by slope (they would otherwise compare equally).
+func edgeLeq(tess *tesselator, reg1 *activeRegion, reg2 *activeRegion) bool {
+	event := tess.event
+	e1 := reg1.eUp
+	e2 := reg2.eUp
+
+	if e1 == nil || e2 == nil {
+		return false
+	}
+
+	if e1.dst() == event {
+		if e2.dst() == event {
+			// Two edges right of the sweep line which meet at the sweep event.
+			// Sort them by slope.
+			if vertLeq(e1.Org, e2.Org) {
+				return edgeSign(e2.dst(), e1.Org, e2.Org) <= 0
+			}
+			return edgeSign(e1.dst(), e2.Org, e1.Org) >= 0
+		}
+		return edgeSign(e2.dst(), event, e2.Org) <= 0
+	}
+	if e2.dst() == event {
+		return edgeSign(e1.dst(), event, e1.Org) >= 0
+	}
+
+	// General case - compute signed distance *from* e1, e2 to event
+	t1 := edgeEval(e1.dst(), event, e1.Org)
+	t2 := edgeEval(e2.dst(), event, e2.Org)
+	return (t1 >= t2)
+}
+
+// addWinding:
+// When we merge two edges into one, we need to compute the combined
+// winding of the new edge.
+func addWinding(eDst *halfEdge, eSrc *halfEdge) {
+	eDst.winding += eSrc.winding
+	eDst.Sym.winding += eSrc.Sym.winding
+}
+
+// fixUpperEdge replace an upper edge which needs fixing (see ConnectRightVertex).
+func fixUpperEdge(tess *tesselator, reg *activeRegion, newEdge *halfEdge) {
+	assert(reg.fixUpperEdge)
+	tessMeshDelete(tess.mesh, reg.eUp)
+	reg.fixUpperEdge = false
+	reg.eUp = newEdge
+	newEdge.activeRegion = reg
+}
+
+func topLeftRegion(tess *tesselator, reg *activeRegion) *activeRegion {
+	org := reg.eUp.Org
+
+	// Find the region above the uppermost edge with the same origin
+	for {
+		reg = reg.above()
+		if reg.eUp.Org != org {
+			break
+		}
+	}
+
+	// If the edge above was a temporary edge introduced by ConnectRightVertex,
+	// now is the time to fix it.
+	if reg.fixUpperEdge {
+		e := tessMeshConnect(tess.mesh, reg.below().eUp.Sym, reg.eUp.Lnext)
+		fixUpperEdge(tess, reg, e)
+		reg = reg.above()
+	}
+	return reg
+}
+
+func topRightRegion(reg *activeRegion) *activeRegion {
+	d := reg.eUp.dst()
+	// Find the region above the uppermost edge with the same destination
+	for {
+		reg = reg.above()
+		if reg.eUp.dst() != d {
+			break
+		}
+	}
+	return reg
+}
+
+// addRegionBelow adds a new active region to the sweep line, *somewhere* below "regAbove"
+// (according to where the new edge belongs in the sweep-line dictionary).
+// The upper edge of the new region will be "eNewUp".
+// Winding number and "inside" flag are not updated.
+func addRegionBelow(tess *tesselator, regAbove *activeRegion, eNewUp *halfEdge) *activeRegion {
+	regNew := &activeRegion{}
+	regNew.eUp = eNewUp
+	regNew.nodeUp = tess.dict.insertBefore(regAbove.nodeUp, regNew)
+	eNewUp.activeRegion = regNew
+	return regNew
+}
+
+func computeWinding(tess *tesselator, reg *activeRegion) {
+	reg.windingNumber = reg.above().windingNumber + int(reg.eUp.winding)
+	reg.inside = tess.windingRule.isInside(reg.windingNumber)
+}
+
+// finishRegion deletes a region from the sweep line.  This happens when the upper
+// and lower chains of a region meet (at a vertex on the sweep line).
+// The "inside" flag is copied to the appropriate mesh face (we could
+// not do this before -- since the structure of the mesh is always
+// changing, this face may not have even existed until now).
+func finishRegion(tess *tesselator, reg *activeRegion) {
+	e := reg.eUp
+	f := e.Lface
+
+	f.inside = reg.inside
+	fmt.Printf("Debug: marking face as inside=%v, winding=%d\n", f.inside, reg.windingNumber)
+
+	f.anEdge = e // optimization for tessMeshTessellateMonoRegion()
+	deleteRegion(tess, reg)
+}
+
+// finishLeftRegions:
+// We are given a vertex with one or more left-going edges.  All affected
+// edges should be in the edge dictionary.  Starting at regFirst.eUp,
+// we walk down deleting all regions where both edges have the same
+// origin vOrg.  At the same time we copy the "inside" flag from the
+// active region to the face, since at this point each face will belong
+// to at most one region (this was not necessarily true until this point
+// in the sweep).  The walk stops at the region above regLast; if regLast
+// is NULL we walk as far as possible.  At the same time we relink the
+// mesh if necessary, so that the ordering of edges around vOrg is the
+// same as in the dictionary.
+func finishLeftRegions(tess *tesselator, regFirst *activeRegion, regLast *activeRegion) *halfEdge {
+	regPrev := regFirst
+	ePrev := regFirst.eUp
+	for regPrev != regLast {
+		regPrev.fixUpperEdge = false // placement was OK
+		reg := regPrev.below()
+		e := reg.eUp
+		if e.Org != ePrev.Org {
+			if !reg.fixUpperEdge {
+				// Remove the last left-going edge.  Even though there are no further
+				// edges in the dictionary with this origin, there may be further
+				// such edges in the mesh (if we are adding left edges to a vertex
+				// that has already been processed).  Thus it is important to call
+				// FinishRegion rather than just deleteRegion.
+				finishRegion(tess, regPrev)
+				break
+			}
+			// If the edge below was a temporary edge introduced by
+			// ConnectRightVertex, now is the time to fix it.
+			e = tessMeshConnect(tess.mesh, ePrev.lPrev(), e.Sym)
+			fixUpperEdge(tess, reg, e)
+		}
+
+		// Relink edges so that ePrev.Onext == e
+		if ePrev.Onext != e {
+			tessMeshSplice(tess.mesh, e.oPrev(), e)
+			tessMeshSplice(tess.mesh, ePrev, e)
+		}
+		finishRegion(tess, regPrev) // may change reg.eUp
+		ePrev = reg.eUp
+		regPrev = reg
+	}
+	return ePrev
+}
+
+// addRightEdges:
+// Purpose: insert right-going edges into the edge dictionary, and update
+// winding numbers and mesh connectivity appropriately.  All right-going
+// edges share a common origin vOrg.  Edges are inserted CCW starting at
+// eFirst; the last edge inserted is eLast.Oprev.  If vOrg has any
+// left-going edges already processed, then eTopLeft must be the edge
+// such that an imaginary upward vertical segment from vOrg would be
+// contained between eTopLeft.Oprev and eTopLeft; otherwise eTopLeft
+// should be nil.
+func addRightEdges(tess *tesselator, regUp *activeRegion, eFirst *halfEdge, eLast *halfEdge, eTopLeft *halfEdge, cleanUp bool) {
+	firstTime := true
+
+	// Insert the new right-going edges in the dictionary
+	e := eFirst
+	for {
+		assert(vertLeq(e.Org, e.dst()))
+		addRegionBelow(tess, regUp, e.Sym)
+		e = e.Onext
+		if e == eLast {
+			break
+		}
+	}
+
+	// Walk *all* right-going edges from e.Org, in the dictionary order,
+	// updating the winding numbers of each region, and re-linking the mesh
+	// edges to match the dictionary ordering (if necessary).
+	if eTopLeft == nil {
+		eTopLeft = regUp.below().eUp.rPrev()
+	}
+	regPrev := regUp
+	ePrev := eTopLeft
+	var reg *activeRegion
+	for {
+		reg = regPrev.below()
+		e = reg.eUp.Sym
+		if e.Org != ePrev.Org {
+			break
+		}
+
+		if e.Onext != ePrev {
+			// Unlink e from its current position, and relink below ePrev
+			tessMeshSplice(tess.mesh, e.oPrev(), e)
+			tessMeshSplice(tess.mesh, ePrev.oPrev(), e)
+		}
+		// Compute the winding number and "inside" flag for the new regions
+		reg.windingNumber = regPrev.windingNumber - int(e.winding)
+		reg.inside = tess.windingRule.isInside(reg.windingNumber)
+
+		// Check for two outgoing edges with same slope -- process these
+		// before any intersection tests (see example in tessComputeInterior).
+		regPrev.dirty = true
+		if !firstTime && checkForRightSplice(tess, regPrev) {
+			addWinding(e, ePrev)
+			deleteRegion(tess, regPrev)
+			tessMeshDelete(tess.mesh, ePrev)
+		}
+		firstTime = false
+		regPrev = reg
+		ePrev = e
+	}
+	regPrev.dirty = true
+	assert(regPrev.windingNumber-int(e.winding) == reg.windingNumber)
+
+	if cleanUp {
+		// Check for intersections between newly adjacent edges.
+		walkDirtyRegions(tess, regPrev)
+	}
+}
+
+// spliceMergeVertices:
+// Two vertices with idential coordinates are combined into one.
+// e1.Org is kept, while e2.Org is discarded.
+func spliceMergeVertices(tess *tesselator, e1 *halfEdge, e2 *halfEdge) {
+	tessMeshSplice(tess.mesh, e1, e2)
+}
+
+// vertexWeights finds some weights which describe how the intersection vertex is
+// a linear combination of "org" and "dest".  Each of the two edges
+// which generated "isect" is allocated 50% of the weight; each edge
+// splits the weight between its org and dst according to the
+// relative distance to "isect".
+func vertexWeights(isect *vertex, org *vertex, dst *vertex) {
+	t1 := vertL1dist(org, isect)
+	t2 := vertL1dist(dst, isect)
+
+	w0 := 0.5 * t2 / (t1 + t2)
+	w1 := 0.5 * t1 / (t1 + t2)
+	isect.coords[0] += w0*org.coords[0] + w1*dst.coords[0]
+	isect.coords[1] += w0*org.coords[1] + w1*dst.coords[1]
+	isect.coords[2] += w0*org.coords[2] + w1*dst.coords[2]
+}
+
+// getIntersectData:
+// We've computed a new intersection point, now we need a "data" pointer
+// from the user so that we can refer to this new vertex in the
+// rendering callbacks.
+func getIntersectData(tess *tesselator, isect *vertex,
+	orgUp *vertex, dstUp *vertex,
+	orgLo *vertex, dstLo *vertex) {
+	isect.coords[0] = 0
+	isect.coords[1] = 0
+	isect.coords[2] = 0
+	isect.idx = undef
+	vertexWeights(isect, orgUp, dstUp)
+	vertexWeights(isect, orgLo, dstLo)
+}
+
+// checkForRightSplice checks the upper and lower edge of "regUp", to make sure that the
+// eUp.Org is above eLo, or eLo.Org is below eUp (depending on which
+// origin is leftmost).
+//
+// The main purpose is to splice right-going edges with the same
+// dest vertex and nearly identical slopes (ie. we can't distinguish
+// the slopes numerically).  However the splicing can also help us
+// to recover from numerical errors.  For example, suppose at one
+// point we checked eUp and eLo, and decided that eUp.Org is barely
+// above eLo.  Then later, we split eLo into two edges (eg. from
+// a splice operation like this one).  This can change the result of
+// our test so that now eUp.Org is incident to eLo, or barely below it.
+// We must correct this condition to maintain the dictionary invariants.
+//
+// One possibility is to check these edges for intersection again
+// (ie. CheckForIntersect).  This is what we do if possible.  However
+// CheckForIntersect requires that tess.event lies between eUp and eLo,
+// so that it has something to fall back on when the intersection
+// calculation gives us an unusable answer.  So, for those cases where
+// we can't check for intersection, this routine fixes the problem
+// by just splicing the offending vertex into the other edge.
+// This is a guaranteed solution, no matter how degenerate things get.
+// Basically this is a combinatorial solution to a numerical problem.
+func checkForRightSplice(tess *tesselator, regUp *activeRegion) bool {
+	regLo := regUp.below()
+	eUp := regUp.eUp
+	eLo := regLo.eUp
+
+	if vertLeq(eUp.Org, eLo.Org) {
+		if edgeSign(eLo.dst(), eUp.Org, eLo.Org) > 0 {
+			return false
+		}
+
+		// eUp.Org appears to be below eLo
+		if !vertEq(eUp.Org, eLo.Org) {
+			// Splice eUp.Org into eLo
+			tessMeshSplitEdge(tess.mesh, eLo.Sym)
+			tessMeshSplice(tess.mesh, eUp, eLo.oPrev())
+			regUp.dirty = true
+			regLo.dirty = true
+
+		} else if eUp.Org != eLo.Org {
+			// merge the two vertices, discarding eUp.Org
+			tess.pq.delete(eUp.Org.pqHandle)
+			spliceMergeVertices(tess, eLo.oPrev(), eUp)
+		}
+	} else {
+		if edgeSign(eUp.dst(), eLo.Org, eUp.Org) < 0 {
+			return false
+		}
+
+		// eLo.Org appears to be above eUp, so splice eLo.Org into eUp
+		regUp.above().dirty = true
+		regUp.dirty = true
+		tessMeshSplitEdge(tess.mesh, eUp.Sym)
+		tessMeshSplice(tess.mesh, eLo.oPrev(), eUp)
+	}
+	return true
+}
+
+// checkForLeftSplice checks the upper and lower edge of "regUp", to make sure that the
+// eUp.Dst is above eLo, or eLo.Dst is below eUp (depending on which
+// destination is rightmost).
+//
+// Theoretically, this should always be true.  However, splitting an edge
+// into two pieces can change the results of previous tests.  For example,
+// suppose at one point we checked eUp and eLo, and decided that eUp.Dst
+// is barely above eLo.  Then later, we split eLo into two edges (eg. from
+// a splice operation like this one).  This can change the result of
+// the test so that now eUp.Dst is incident to eLo, or barely below it.
+// We must correct this condition to maintain the dictionary invariants
+// (otherwise new edges might get inserted in the wrong place in the
+// dictionary, and bad stuff will happen).
+//
+// We fix the problem by just splicing the offending vertex into the
+// other edge.
+func checkForLeftSplice(tess *tesselator, regUp *activeRegion) bool {
+	regLo := regUp.below()
+	eUp := regUp.eUp
+	eLo := regLo.eUp
+
+	assert(!vertEq(eUp.dst(), eLo.dst()))
+
+	if vertLeq(eUp.dst(), eLo.dst()) {
+		if edgeSign(eUp.dst(), eLo.dst(), eUp.Org) < 0 {
+			return false
+		}
+
+		// eLo.Dst is above eUp, so splice eLo.Dst into eUp
+		regUp.above().dirty = true
+		regUp.dirty = true
+		e := tessMeshSplitEdge(tess.mesh, eUp)
+		tessMeshSplice(tess.mesh, eLo.Sym, e)
+		e.Lface.inside = regUp.inside
+	} else {
+		if edgeSign(eLo.dst(), eUp.dst(), eLo.Org) > 0 {
+			return false
+		}
+		// eUp.Dst is below eLo, so splice eUp.Dst into eLo
+		regUp.dirty = true
+		regLo.dirty = true
+		e := tessMeshSplitEdge(tess.mesh, eLo)
+		tessMeshSplice(tess.mesh, eUp.Lnext, eLo.Sym)
+		e.rFace().inside = regUp.inside
+	}
+	return true
+}
+
+// Check the upper and lower edges of the given region to see if
+// they intersect.  If so, create the intersection and add it
+// to the data structures.
+//
+// Returns TRUE if adding the new intersection resulted in a recursive
+// call to AddRightEdges(); in this case all "dirty" regions have been
+// checked for intersections, and possibly regUp has been deleted.
+func checkForIntersect(tess *tesselator, regUp *activeRegion) bool {
+	regLo := regUp.below()
+	if regLo == nil {
+		// Debug: handle nil region gracefully
+		fmt.Println("Debug: regLo is nil in checkForIntersect, skipping")
+		return false
+	}
+
+	eUp := regUp.eUp
+	eLo := regLo.eUp
+	orgUp := eUp.Org
+	orgLo := eLo.Org
+	dstUp := eUp.dst()
+	dstLo := eLo.dst()
+
+	assert(!vertEq(dstLo, dstUp))
+	assert(edgeSign(dstUp, tess.event, orgUp) <= 0)
+	assert(edgeSign(dstLo, tess.event, orgLo) >= 0)
+	assert(orgUp != tess.event && orgLo != tess.event)
+	assert(!regUp.fixUpperEdge && !regLo.fixUpperEdge)
+
+	if orgUp == orgLo {
+		// right endpoints are the same
+		return false
+	}
+
+	tMinUp := minf(orgUp.t, dstUp.t)
+	tMaxLo := maxf(orgLo.t, dstLo.t)
+	if tMinUp > tMaxLo {
+		// t ranges do not overlap
+		return false
+	}
+
+	if vertLeq(orgUp, orgLo) {
+		if edgeSign(dstLo, orgUp, orgLo) > 0 {
+			return false
+		}
+	} else {
+		if edgeSign(dstUp, orgLo, orgUp) < 0 {
+			return false
+		}
+	}
+
+	var isect vertex
+	edgeIntersect(dstUp, orgUp, dstLo, orgLo, &isect)
+	// The following properties are guaranteed:
+	assert(minf(orgUp.t, dstUp.t) <= isect.t)
+	assert(isect.t <= maxf(orgLo.t, dstLo.t))
+	assert(minf(dstLo.s, dstUp.s) <= isect.s)
+	assert(isect.s <= maxf(orgLo.s, orgUp.s))
+
+	if vertLeq(&isect, tess.event) {
+		// The intersection point lies slightly to the left of the sweep line,
+		// so move it until it''s slightly to the right of the sweep line.
+		// (If we had perfect numerical precision, this would never happen
+		// in the first place).  The easiest and safest thing to do is
+		// replace the intersection by tess.event.
+		isect.s = tess.event.s
+		isect.t = tess.event.t
+	}
+	// Similarly, if the computed intersection lies to the right of the
+	// rightmost origin (which should rarely happen), it can cause
+	// unbelievable inefficiency on sufficiently degenerate inputs.
+	// (If you have the test program, try running test54.d with the
+	// "X zoom" option turned on).
+	var orgMin *vertex
+	if vertLeq(orgUp, orgLo) {
+		orgMin = orgUp
+	} else {
+		orgMin = orgLo
+	}
+	if vertLeq(orgMin, &isect) {
+		isect.s = orgMin.s
+		isect.t = orgMin.t
+	}
+
+	if vertEq(&isect, orgUp) || vertEq(&isect, orgLo) {
+		// Easy case -- intersection at one of the right endpoints
+		checkForRightSplice(tess, regUp)
+		return false
+	}
+
+	if (!vertEq(dstUp, tess.event) && edgeSign(dstUp, tess.event, &isect) >= 0) || (!vertEq(dstLo, tess.event) && edgeSign(dstLo, tess.event, &isect) <= 0) {
+		// Very unusual -- the new upper or lower edge would pass on the
+		// wrong side of the sweep event, or through it.  This can happen
+		// due to very small numerical errors in the intersection calculation.
+		if dstLo == tess.event {
+			// Splice dstLo into eUp, and process the new region(s)
+			tessMeshSplitEdge(tess.mesh, eUp.Sym)
+			tessMeshSplice(tess.mesh, eLo.Sym, eUp)
+			regUp = topLeftRegion(tess, regUp)
+			eUp = regUp.below().eUp
+			finishLeftRegions(tess, regUp.below(), regLo)
+			addRightEdges(tess, regUp, eUp.oPrev(), eUp, eUp, true)
+			return true
+		}
+		if dstUp == tess.event {
+			// Splice dstUp into eLo, and process the new region(s)
+			tessMeshSplitEdge(tess.mesh, eLo.Sym)
+			tessMeshSplice(tess.mesh, eUp.Lnext, eLo.oPrev())
+			regLo = regUp
+			regUp = topRightRegion(regUp)
+			e := regUp.below().eUp.rPrev()
+			regLo.eUp = eLo.oPrev()
+			eLo = finishLeftRegions(tess, regLo, nil)
+			addRightEdges(tess, regUp, eLo.Onext, eUp.rPrev(), e, true)
+			return true
+		}
+		// Special case: called from ConnectRightVertex.  If either
+		// edge passes on the wrong side of tess.event, split it
+		// (and wait for ConnectRightVertex to splice it appropriately).
+		if edgeSign(dstUp, tess.event, &isect) >= 0 {
+			regUp.above().dirty = true
+			regUp.dirty = true
+			tessMeshSplitEdge(tess.mesh, eUp.Sym)
+			eUp.Org.s = tess.event.s
+			eUp.Org.t = tess.event.t
+		}
+		if edgeSign(dstLo, tess.event, &isect) <= 0 {
+			regUp.dirty = true
+			regLo.dirty = true
+			tessMeshSplitEdge(tess.mesh, eLo.Sym)
+			eLo.Org.s = tess.event.s
+			eLo.Org.t = tess.event.t
+		}
+		// leave the rest for ConnectRightVertex
+		return false
+	}
+
+	// General case -- split both edges, splice into new vertex.
+	// When we do the splice operation, the order of the arguments is
+	// arbitrary as far as correctness goes.  However, when the operation
+	// creates a new face, the work done is proportional to the size of
+	// the new face.  We expect the faces in the processed part of
+	// the mesh (ie. eUp.Lface) to be smaller than the faces in the
+	// unprocessed original contours (which will be eLo.Oprev.Lface).
+	tessMeshSplitEdge(tess.mesh, eUp.Sym)
+	tessMeshSplitEdge(tess.mesh, eLo.Sym)
+	tessMeshSplice(tess.mesh, eLo.oPrev(), eUp)
+	eUp.Org.s = isect.s
+	eUp.Org.t = isect.t
+	eUp.Org.pqHandle = tess.pq.insert(eUp.Org)
+	getIntersectData(tess, eUp.Org, orgUp, dstUp, orgLo, dstLo)
+	regUp.above().dirty = true
+	regUp.dirty = true
+	regLo.dirty = true
+	return false
+}
+
+// walkDirtyRegions:
+// When the upper or lower edge of any region changes, the region is
+// marked "dirty".  This routine walks through all the dirty regions
+// and makes sure that the dictionary invariants are satisfied
+// (see the comments at the beginning of this file).  Of course
+// new dirty regions can be created as we make changes to restore
+// the invariants.
+func walkDirtyRegions(tess *tesselator, regUp *activeRegion) {
+	regLo := regUp.below()
+
+	for {
+		// Find the lowest dirty region (we walk from the bottom up).
+		if regLo == nil {
+			println("WARNING: regLo is nil in walkDirtyRegions")
+			return
+		}
+		for regLo.dirty {
+			regUp = regLo
+			regLo = regLo.below()
+			if regLo == nil {
+				break
+			}
+		}
+		if !regUp.dirty {
+			regLo = regUp
+			regUp = regUp.above()
+			if regUp == nil || !regUp.dirty {
+				// We've walked all the dirty regions
+				return
+			}
+		}
+		regUp.dirty = false
+		if regLo == nil {
+			println("WARNING: regLo is nil when accessing eUp and eLo")
+			return
+		}
+		eUp := regUp.eUp
+		eLo := regLo.eUp
+
+		// Add comprehensive nil checks before accessing e.Sym.Org via dst()
+		if eUp == nil || eUp.Sym == nil || eUp.Sym.Org == nil {
+			println("WARNING: eUp or its Sym/Org is nil in walkDirtyRegions")
+			if eUp == nil {
+				println("  eUp is nil")
+			} else if eUp.Sym == nil {
+				println("  eUp.Sym is nil")
+			} else if eUp.Sym.Org == nil {
+				println("  eUp.Sym.Org is nil")
+			}
+			continue
+		}
+
+		if eLo == nil || eLo.Sym == nil || eLo.Sym.Org == nil {
+			println("WARNING: eLo or its Sym/Org is nil in walkDirtyRegions")
+			if eLo == nil {
+				println("  eLo is nil")
+			} else if eLo.Sym == nil {
+				println("  eLo.Sym is nil")
+			} else if eLo.Sym.Org == nil {
+				println("  eLo.Sym.Org is nil")
+			}
+			continue
+		}
+
+		if eUp.dst() != eLo.dst() {
+			// Check that the edge ordering is obeyed at the Dst vertices.
+			if checkForLeftSplice(tess, regUp) {
+
+				// If the upper or lower edge was marked fixUpperEdge, then
+				// we no longer need it (since these edges are needed only for
+				// vertices which otherwise have no right-going edges).
+				if regLo.fixUpperEdge {
+					deleteRegion(tess, regLo)
+					tessMeshDelete(tess.mesh, eLo)
+					regLo = regUp.below()
+					eLo = regLo.eUp
+				} else if regUp.fixUpperEdge {
+					deleteRegion(tess, regUp)
+					tessMeshDelete(tess.mesh, eUp)
+					regUp = regLo.above()
+					eUp = regUp.eUp
+				}
+			}
+		}
+		if eUp.Org != eLo.Org {
+			if eUp.dst() != eLo.dst() && !regUp.fixUpperEdge && !regLo.fixUpperEdge && (eUp.dst() == tess.event || eLo.dst() == tess.event) {
+				// When all else fails in CheckForIntersect(), it uses tess.event
+				// as the intersection location.  To make this possible, it requires
+				// that tess.event lie between the upper and lower edges, and also
+				// that neither of these is marked fixUpperEdge (since in the worst
+				// case it might splice one of these edges into tess.event, and
+				// violate the invariant that fixable edges are the only right-going
+				// edge from their associated vertex).
+				if checkForIntersect(tess, regUp) {
+					// WalkDirtyRegions() was called recursively; we're done
+					return
+				}
+			} else {
+				// Even though we can't use CheckForIntersect(), the Org vertices
+				// may violate the dictionary edge ordering.  Check and correct this.
+				checkForRightSplice(tess, regUp)
+			}
+		}
+		if eUp.Org == eLo.Org && eUp.dst() == eLo.dst() {
+			// A degenerate loop consisting of only two edges -- delete it.
+			addWinding(eLo, eUp)
+			deleteRegion(tess, regUp)
+			tessMeshDelete(tess.mesh, eUp)
+			regUp = regLo.above()
+		}
+	}
+}
+
+// connectRightVertex:
+// Purpose: connect a "right" vertex vEvent (one where all edges go left)
+// to the unprocessed portion of the mesh.  Since there are no right-going
+// edges, two regions (one above vEvent and one below) are being merged
+// into one.  "regUp" is the upper of these two regions.
+//
+// There are two reasons for doing this (adding a right-going edge):
+//   - if the two regions being merged are "inside", we must add an edge
+//     to keep them separated (the combined region would not be monotone).
+//   - in any case, we must leave some record of vEvent in the dictionary,
+//     so that we can merge vEvent with features that we have not seen yet.
+//     For example, maybe there is a vertical edge which passes just to
+//     the right of vEvent; we would like to splice vEvent into this edge.
+//
+// However, we don't want to connect vEvent to just any vertex.  We don”t
+// want the new edge to cross any other edges; otherwise we will create
+// intersection vertices even when the input data had no self-intersections.
+// (This is a bad thing; if the user's input data has no intersections,
+// we don't want to generate any false intersections ourselves.)
+//
+// Our eventual goal is to connect vEvent to the leftmost unprocessed
+// vertex of the combined region (the union of regUp and regLo).
+// But because of unseen vertices with all right-going edges, and also
+// new vertices which may be created by edge intersections, we don”t
+// know where that leftmost unprocessed vertex is.  In the meantime, we
+// connect vEvent to the closest vertex of either chain, and mark the region
+// as "fixUpperEdge".  This flag says to delete and reconnect this edge
+// to the next processed vertex on the boundary of the combined region.
+// Quite possibly the vertex we connected to will turn out to be the
+// closest one, in which case we won”t need to make any changes.
+func connectRightVertex(tess *tesselator, regUp *activeRegion, eBottomLeft *halfEdge) {
+	eTopLeft := eBottomLeft.Onext
+	regLo := regUp.below()
+	eUp := regUp.eUp
+	eLo := regLo.eUp
+	degenerate := false
+
+	if eUp.dst() != eLo.dst() {
+		checkForIntersect(tess, regUp)
+	}
+
+	// Possible new degeneracies: upper or lower edge of regUp may pass
+	// through vEvent, or may coincide with new intersection vertex
+	if vertEq(eUp.Org, tess.event) {
+		tessMeshSplice(tess.mesh, eTopLeft.oPrev(), eUp)
+		regUp = topLeftRegion(tess, regUp)
+		eTopLeft = regUp.below().eUp
+		finishLeftRegions(tess, regUp.below(), regLo)
+		degenerate = true
+	}
+	if vertEq(eLo.Org, tess.event) {
+		tessMeshSplice(tess.mesh, eBottomLeft, eLo.oPrev())
+		eBottomLeft = finishLeftRegions(tess, regLo, nil)
+		degenerate = true
+	}
+	if degenerate {
+		addRightEdges(tess, regUp, eBottomLeft.Onext, eTopLeft, eTopLeft, true)
+		return
+	}
+
+	// Non-degenerate situation -- need to add a temporary, fixable edge.
+	// Connect to the closer of eLo.Org, eUp.Org.
+	var eNew *halfEdge
+	if vertLeq(eLo.Org, eUp.Org) {
+		eNew = eLo.oPrev()
+	} else {
+		eNew = eUp
+	}
+	eNew = tessMeshConnect(tess.mesh, eBottomLeft.lPrev(), eNew)
+
+	// Prevent cleanup, otherwise eNew might disappear before we've even
+	// had a chance to mark it as a temporary edge.
+	addRightEdges(tess, regUp, eNew, eNew.Onext, eNew.Onext, false)
+	eNew.Sym.activeRegion.fixUpperEdge = true
+	walkDirtyRegions(tess, regUp)
+}
+
+// connectLeftDegenerate:
+// The event vertex lies exacty on an already-processed edge or vertex.
+// Adding the new vertex involves splicing it into the already-processed
+// part of the mesh.
+func connectLeftDegenerate(tess *tesselator, regUp *activeRegion, vEvent *vertex) {
+	// Because vertices at exactly the same location are merged together
+	// before we process the sweep event, some degenerate cases can't occur.
+	// However if someone eventually makes the modifications required to
+	// merge features which are close together, the cases below marked
+	// TOLERANCE_NONZERO will be useful.  They were debugged before the
+	// code to merge identical vertices in the main loop was added.
+	const TOLERANCE_NONZERO = true
+
+	e := regUp.eUp
+	if vertEq(e.Org, vEvent) {
+		// e.Org is an unprocessed vertex - just combine them, and wait
+		// for e.Org to be pulled from the queue
+		assert(TOLERANCE_NONZERO)
+		spliceMergeVertices(tess, e, vEvent.anEdge)
+		return
+	}
+
+	if vertEq(e.dst(), vEvent) {
+		// General case -- splice vEvent into edge e which passes through it
+		tessMeshSplitEdge(tess.mesh, e.Sym)
+		if regUp.fixUpperEdge {
+			// This edge was fixable -- delete unused portion of original edge
+			tessMeshDelete(tess.mesh, e.Onext)
+			regUp.fixUpperEdge = false
+		}
+		tessMeshSplice(tess.mesh, vEvent.anEdge, e)
+		// recurse
+		sweepEvent(tess, vEvent)
+		return
+	}
+
+	// vEvent coincides with e.Dst, which has already been processed.
+	// Splice in the additional right-going edges.
+	assert(TOLERANCE_NONZERO)
+	regUp = topRightRegion(regUp)
+	reg := regUp.below()
+	eTopRight := reg.eUp.Sym
+	eTopLeft := eTopRight.Onext
+	eLast := eTopRight.Onext
+	if reg.fixUpperEdge {
+		// Here e.Dst has only a single fixable edge going right.
+		// We can delete it since now we have some real right-going edges.
+		assert(eTopLeft != eTopRight) // there are some left edges too
+		deleteRegion(tess, reg)
+		tessMeshDelete(tess.mesh, eTopRight)
+		eTopRight = eTopLeft.oPrev()
+	}
+	tessMeshSplice(tess.mesh, vEvent.anEdge, eTopRight)
+	if !edgeGoesLeft(eTopLeft) {
+		// e.Dst had no left-going edges -- indicate this to AddRightEdges()
+		eTopLeft = nil
+	}
+	addRightEdges(tess, regUp, eTopRight.Onext, eLast, eTopLeft, true)
+}
+
+// connectLeftVertex:
+// Purpose: connect a "left" vertex (one where both edges go right)
+// to the processed portion of the mesh.  Let R be the active region
+// containing vEvent, and let U and L be the upper and lower edge
+// chains of R.  There are two possibilities:
+//
+//   - the normal case: split R into two regions, by connecting vEvent to
+//     the rightmost vertex of U or L lying to the left of the sweep line
+//
+//   - the degenerate case: if vEvent is close enough to U or L, we
+//     merge vEvent into that edge chain.  The subcases are:
+//
+//   - merging with the rightmost vertex of U or L
+//
+//   - merging with the active edge of U or L
+//
+//   - merging with an already-processed portion of U or L
+func connectLeftVertex(tess *tesselator, vEvent *vertex) {
+	var tmp activeRegion
+
+	// assert( vEvent.anEdge.Onext.Onext == vEvent.anEdge );
+
+	// Get a pointer to the active region containing vEvent
+	tmp.eUp = vEvent.anEdge.Sym
+	regUp := dictKey(tess.dict.search(&tmp))
+	if regUp == nil {
+		println("WARNING: regUp is nil in connectLeftVertex")
+		return
+	}
+	regLo := regUp.below()
+	if regLo == nil {
+		// This may happen if the input polygon is coplanar.
+		return
+	}
+	eUp := regUp.eUp
+	eLo := regLo.eUp
+
+	// Try merging with U or L first
+	if edgeSign(eUp.dst(), vEvent, eUp.Org) == 0 {
+		connectLeftDegenerate(tess, regUp, vEvent)
+		return
+	}
+
+	// Connect vEvent to rightmost processed vertex of either chain.
+	// e.Dst is the vertex that we will connect to vEvent.
+	var reg *activeRegion
+	if vertLeq(eLo.dst(), eUp.dst()) {
+		reg = regUp
+	} else {
+		reg = regLo
+	}
+
+	if regUp.inside || reg.fixUpperEdge {
+		var eNew *halfEdge
+		if reg == regUp {
+			eNew = tessMeshConnect(tess.mesh, vEvent.anEdge.Sym, eUp.Lnext)
+		} else {
+			tempHalfEdge := tessMeshConnect(tess.mesh, eLo.dNext(), vEvent.anEdge)
+			eNew = tempHalfEdge.Sym
+		}
+		if reg.fixUpperEdge {
+			fixUpperEdge(tess, reg, eNew)
+		} else {
+			computeWinding(tess, addRegionBelow(tess, regUp, eNew))
+		}
+		sweepEvent(tess, vEvent)
+	} else {
+		// The new vertex is in a region which does not belong to the polygon.
+		// We don''t need to connect this vertex to the rest of the mesh.
+		addRightEdges(tess, regUp, vEvent.anEdge, vEvent.anEdge, nil, true)
+	}
+}
+
+// sweepEvent does everything necessary when the sweep line crosses a vertex.
+// Updates the mesh and the edge dictionary.
+func sweepEvent(tess *tesselator, vEvent *vertex) {
+	tess.event = vEvent // for access in EdgeLeq()
+
+	// Check if this vertex is the right endpoint of an edge that is
+	// already in the dictionary.  In this case we don't need to waste
+	// time searching for the location to insert new edges.
+	e := vEvent.anEdge
+	for e.activeRegion == nil {
+		e = e.Onext
+		if e == vEvent.anEdge {
+			// All edges go right -- not incident to any processed edges
+			connectLeftVertex(tess, vEvent)
+			return
+		}
+	}
+
+	// Processing consists of two phases: first we "finish" all the
+	// active regions where both the upper and lower edges terminate
+	// at vEvent (ie. vEvent is closing off these regions).
+	// We mark these faces "inside" or "outside" the polygon according
+	// to their winding number, and delete the edges from the dictionary.
+	// This takes care of all the left-going edges from vEvent.
+	regUp := topLeftRegion(tess, e.activeRegion)
+	reg := regUp.below()
+	eTopLeft := reg.eUp
+	eBottomLeft := finishLeftRegions(tess, reg, nil)
+
+	// Next we process all the right-going edges from vEvent.  This
+	// involves adding the edges to the dictionary, and creating the
+	// associated "active regions" which record information about the
+	// regions between adjacent dictionary edges.
+	if eBottomLeft.Onext == eTopLeft {
+		// No right-going edges -- add a temporary "fixable" edge
+		connectRightVertex(tess, regUp, eBottomLeft)
+	} else {
+		addRightEdges(tess, regUp, eBottomLeft.Onext, eTopLeft, eTopLeft, true)
+	}
+}
+
+// addSentinel makes the sentinel coordinates big enough that they will never be
+// merged with real input features.
+//
+// We add two sentinel edges above and below all other edges,
+// to avoid special cases at the top and bottom.
+func addSentinel(tess *tesselator, smin, smax float, t float) {
+	reg := &activeRegion{}
+
+	e := tessMeshMakeEdge(tess.mesh)
+
+	// Get vertices created by tessMeshMakeEdge
+	vOrigin := e.Org
+	vDest := e.Sym.Org
+
+	// Update vertex properties
+	vOrigin.s = smax
+	vOrigin.t = t
+	vOrigin.coords = [3]float{0, 0, 0}
+
+	tess.event = vDest
+
+	reg.eUp = e
+	reg.sentinel = true
+	reg.nodeUp = tess.dict.insert(reg)
+}
+
+// initEdgeDict:
+// We maintain an ordering of edge intersections with the sweep line.
+// This order is maintained in a dynamic dictionary.
+// initEdgeDict initializes the edge dictionary, which maintains the order
+// of edges crossing the sweep line. The dictionary is implemented as a
+// balanced binary search tree, ordered by the x-coordinate of the edge's
+// intersection with the sweep line.
+func initEdgeDict(tess *tesselator) {
+	tess.dict = newDict(tess)
+
+	w := (tess.bmax[0] - tess.bmin[0])
+	h := (tess.bmax[1] - tess.bmin[1])
+
+	// If the bbox is empty, ensure that sentinels are not coincident by
+	// slightly enlarging it.
+	// TODO: This hack was introduced at https://github.com/memononen/tess/commit/d7c34ac3ff11993b0fc0395fe7d96f4cc75e6bb6.
+	// Is this logic correct?
+	smin := tess.bmin[0] - adjust(w)
+	smax := tess.bmax[0] + adjust(w)
+	tmin := tess.bmin[1] - adjust(h)
+	tmax := tess.bmax[1] + adjust(h)
+
+	// Create sentinel regions to avoid boundary conditions
+	tess.leftSentinel = newActiveRegion()
+	tess.leftSentinel.sentinel = true
+	tess.rightSentinel = newActiveRegion()
+	tess.rightSentinel.sentinel = true
+
+	// Link sentinels together in the dictionary
+	tess.rightSentinel.nodeUp = tess.dict.insertBefore(nil, tess.rightSentinel)
+	tess.leftSentinel.nodeUp = tess.dict.insertBefore(tess.rightSentinel.nodeUp, tess.leftSentinel)
+
+	addSentinel(tess, smin, smax, tmin)
+	addSentinel(tess, smin, smax, tmax)
+}
+
+func doneEdgeDict(tess *tesselator) {
+	fixedEdges := 0
+	for {
+		reg := dictKey(tess.dict.min())
+		if reg == nil {
+			break
+		}
+		// At the end of all processing, the dictionary should contain
+		// only the two sentinel edges, plus at most one "fixable" edge
+		// created by ConnectRightVertex().
+		if !reg.sentinel {
+			assert(reg.fixUpperEdge)
+			fixedEdges++
+			assert(fixedEdges == 1)
+		}
+		assert(reg.windingNumber == 0)
+		deleteRegion(tess, reg)
+		// tessMeshDelete( reg.eUp );
+	}
+}
+
+// removeDegenerateEdges removes zero-length edges, and contours with fewer than 3 vertices.
+func removeDegenerateEdges(tess *tesselator) {
+	eHead := &tess.mesh.eHead
+	var eNext *halfEdge
+	for e := eHead.next; e != eHead; e = eNext {
+		eNext = e.next
+		eLnext := e.Lnext
+
+		if vertEq(e.Org, e.dst()) && e.Lnext.Lnext != e {
+			// Zero-length edge, contour has at least 3 edges
+			spliceMergeVertices(tess, eLnext, e) /* deletes e.Org */
+			tessMeshDelete(tess.mesh, e)
+			e = eLnext
+			eLnext = e.Lnext
+		}
+		if eLnext.Lnext == e {
+			// Degenerate contour (one or two edges)
+			if eLnext != e {
+				if eLnext == eNext || eLnext == eNext.Sym {
+					eNext = eNext.next
+				}
+				tessMeshDelete(tess.mesh, eLnext)
+			}
+			if e == eNext || e == eNext.Sym {
+				eNext = eNext.next
+			}
+			tessMeshDelete(tess.mesh, e)
+		}
+	}
+}
+
+// initPriorityQ inserts all vertices into the priority queue which determines the
+// order in which vertices cross the sweep line.
+func initPriorityQ(tess *tesselator) {
+	tess.pq = newPriorityQ()
+
+	vHead := &tess.mesh.vHead
+	for v := vHead.next; v != vHead; v = v.next {
+		v.pqHandle = tess.pq.insert(v)
+	}
+}
+
+// removeDegenerateFaces deletes any degenerate faces with only two edges.  walkDirtyRegions()
+// will catch almost all of these, but it won't catch degenerate faces
+// produced by splice operations on already-processed edges.
+// The two places this can happen are in FinishLeftRegions(), when
+// we splice in a "temporary" edge produced by ConnectRightVertex(),
+// and in checkForLeftSplice(), where we splice already-processed
+// edges to ensure that our dictionary invariants are not violated
+// by numerical errors.
+//
+// In both these cases it is *very* dangerous to delete the offending
+// edge at the time, since one of the routines further up the stack
+// will sometimes be keeping a pointer to that edge.
+func removeDegenerateFaces(tess *tesselator, mesh *mesh) {
+	var fNext *face
+	for f := mesh.fHead.next; f != &mesh.fHead; f = fNext {
+		fNext = f.next
+		e := f.anEdge
+
+		// Add defensive nil checks
+		if e == nil || e.Lnext == nil || e.Onext == nil {
+			continue
+		}
+
+		// Skip if already processed or invalid
+		if e.Lnext == e {
+			continue
+		}
+
+		if e.Lnext.Lnext == e {
+			// A face with only two edges
+			if e.Onext != nil && e != nil {
+				addWinding(e.Onext, e)
+				tessMeshDelete(tess.mesh, e)
+			}
+		}
+	}
+}
+
+// tessComputeInterior computes the planar arrangement specified
+// by the given contours, and further subdivides this arrangement
+// into regions.  Each region is marked "inside" if it belongs
+// to the polygon, according to the rule given by tess.windingRule.
+// Each interior region is guaranteed be monotone.
+func tessComputeInterior(tess *tesselator) {
+	//TESSvertex *v, *vNext;
+
+	// Each vertex defines an event for our sweep line.  Start by inserting
+	// all the vertices in a priority queue.  Events are processed in
+	// lexicographic order, ie.
+	//
+	//  e1 < e2  iff  e1.x < e2.x || (e1.x == e2.x && e1.y < e2.y)
+	removeDegenerateEdges(tess)
+	initPriorityQ(tess)
+	initEdgeDict(tess)
+
+	for {
+		v := tess.pq.extractMin()
+		if v == nil {
+			break
+		}
+		for {
+			vNext := tess.pq.minimum()
+			if vNext == nil || !vertEq(vNext, v) {
+				break
+			}
+
+			// Merge together all vertices at exactly the same location.
+			// This is more efficient than processing them one at a time,
+			// simplifies the code (see ConnectLeftDegenerate), and is also
+			// important for correct handling of certain degenerate cases.
+			// For example, suppose there are two identical edges A and B
+			// that belong to different contours (so without this code they would
+			// be processed by separate sweep events).  Suppose another edge C
+			// crosses A and B from above.  When A is processed, we split it
+			// at its intersection point with C.  However this also splits C,
+			// so when we insert B we may compute a slightly different
+			// intersection point.  This might leave two edges with a small
+			// gap between them.  This kind of error is especially obvious
+			// when using boundary extraction (TESS_BOUNDARY_ONLY).
+			vNext = tess.pq.extractMin()
+			spliceMergeVertices(tess, v.anEdge, vNext.anEdge)
+		}
+		sweepEvent(tess, v)
+	}
+
+	// Set tess.event for debugging purposes
+	tess.event = dictKey(tess.dict.min()).eUp.Org
+	doneEdgeDict(tess)
+
+	removeDegenerateFaces(tess, tess.mesh)
+	tessMeshCheckMesh(tess.mesh)
+}
