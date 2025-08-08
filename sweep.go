@@ -776,14 +776,26 @@ func walkDirtyRegions(tess *tesselator, regUp *activeRegion) {
 				// vertices which otherwise have no right-going edges).
 				if regLo.fixUpperEdge {
 					deleteRegion(tess, regLo)
-					tessMeshDelete(tess.mesh, eLo)
+					if tess.mesh != nil && eLo != nil && eLo.Sym != nil && eLo.Org != nil && eLo.dst() != nil {
+						tessMeshDelete(tess.mesh, eLo)
+					} else {
+						println("WARNING: Skipping tessMeshDelete for eLo due to nil values")
+					}
 					regLo = regUp.below()
-					eLo = regLo.eUp
+					if regLo != nil {
+						eLo = regLo.eUp
+					}
 				} else if regUp.fixUpperEdge {
 					deleteRegion(tess, regUp)
-					tessMeshDelete(tess.mesh, eUp)
+					if tess.mesh != nil && eUp != nil && eUp.Sym != nil && eUp.Org != nil && eUp.dst() != nil {
+						tessMeshDelete(tess.mesh, eUp)
+					} else {
+						println("WARNING: Skipping tessMeshDelete for eUp due to nil values")
+					}
 					regUp = regLo.above()
-					eUp = regUp.eUp
+					if regUp != nil {
+						eUp = regUp.eUp
+					}
 				}
 			}
 		}
@@ -810,8 +822,15 @@ func walkDirtyRegions(tess *tesselator, regUp *activeRegion) {
 			// A degenerate loop consisting of only two edges -- delete it.
 			addWinding(eLo, eUp)
 			deleteRegion(tess, regUp)
-			tessMeshDelete(tess.mesh, eUp)
+			if tess.mesh != nil && eUp != nil && eUp.Sym != nil && eUp.Org != nil && eUp.dst() != nil {
+				tessMeshDelete(tess.mesh, eUp)
+			} else {
+				println("WARNING: Skipping tessMeshDelete for degenerate loop due to nil values")
+			}
 			regUp = regLo.above()
+			if regUp != nil {
+				eUp = regUp.eUp
+			}
 		}
 	}
 }
@@ -939,7 +958,15 @@ func connectLeftDegenerate(tess *tesselator, regUp *activeRegion, vEvent *vertex
 	// Splice in the additional right-going edges.
 	assert(TOLERANCE_NONZERO)
 	regUp = topRightRegion(regUp)
+	if regUp == nil {
+		println("WARNING: regUp is nil after topRightRegion in connectLeftDegenerate")
+		return
+	}
 	reg := regUp.below()
+	if reg == nil {
+		println("WARNING: reg is nil in connectLeftDegenerate")
+		return
+	}
 	eTopRight := reg.eUp.Sym
 	eTopLeft := eTopRight.Onext
 	eLast := eTopRight.Onext
@@ -991,10 +1018,19 @@ func connectLeftVertex(tess *tesselator, vEvent *vertex) {
 	regLo := regUp.below()
 	if regLo == nil {
 		// This may happen if the input polygon is coplanar.
+		println("WARNING: regLo is nil in connectLeftVertex")
 		return
 	}
 	eUp := regUp.eUp
+	if eUp == nil {
+		println("WARNING: eUp is nil in connectLeftVertex")
+		return
+	}
 	eLo := regLo.eUp
+	if eLo == nil {
+		println("WARNING: eLo is nil in connectLeftVertex")
+		return
+	}
 
 	// Try merging with U or L first
 	if edgeSign(eUp.dst(), vEvent, eUp.Org) == 0 {
