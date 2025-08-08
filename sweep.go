@@ -849,7 +849,13 @@ func walkDirtyRegions(tess *tesselator, regUp *activeRegion) {
 func connectRightVertex(tess *tesselator, regUp *activeRegion, eBottomLeft *halfEdge) {
 	eTopLeft := eBottomLeft.Onext
 	regLo := regUp.below()
+	if regLo == nil {
+		panic("regLo is nil in connectRightVertex")
+	}
 	eUp := regUp.eUp
+	if eUp == nil {
+		panic("eUp is nil in connectRightVertex")
+	}
 	eLo := regLo.eUp
 	degenerate := false
 
@@ -1051,7 +1057,14 @@ func sweepEvent(tess *tesselator, vEvent *vertex) {
 	// to their winding number, and delete the edges from the dictionary.
 	// This takes care of all the left-going edges from vEvent.
 	regUp := topLeftRegion(tess, e.activeRegion)
+	if regUp == nil {
+		panic("regUp is nil in sweepEvent")
+	}
+
 	reg := regUp.below()
+	if reg == nil {
+		panic("reg is nil in sweepEvent")
+	}
 	eTopLeft := reg.eUp
 	eBottomLeft := finishLeftRegions(tess, reg, nil)
 
