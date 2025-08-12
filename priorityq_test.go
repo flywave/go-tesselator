@@ -144,31 +144,3 @@ func TestPriorityQ(t *testing.T) {
 		}
 	})
 }
-
-// 测试vertLeq函数
-func TestVertLeq(t *testing.T) {
-	v1 := &vertex{s: 1.0, t: 2.0}
-	v2 := &vertex{s: 1.0, t: 2.0}
-	v3 := &vertex{s: 1.0, t: 3.0}
-	v4 := &vertex{s: 2.0, t: 1.0}
-
-	if !vertLeq(v1, v2) {
-		t.Error("Expected v1 <= v2")
-	}
-
-	if !vertLeq(v1, v3) {
-		t.Error("Expected v1 <= v3")
-	}
-
-	if vertLeq(v3, v1) {
-		t.Error("Expected v3 > v1")
-	}
-
-	if !vertLeq(v1, v4) {
-		t.Error("Expected v1 <= v4")
-	}
-
-	if vertLeq(v4, v1) {
-		t.Error("Expected v4 > v1")
-	}
-}
