@@ -18,9 +18,9 @@ const (
 	WindingRuleAbsGeqTwo
 )
 
-func (w WindingRule) isInside(n int) bool {
+func (tess *tesselator) isInside(n int) bool {
 	result := false
-	switch w {
+	switch tess.windingRule {
 	case WindingRuleOdd:
 		result = (n & 1) != 0
 	case WindingRuleNonzero:
@@ -32,9 +32,6 @@ func (w WindingRule) isInside(n int) bool {
 	case WindingRuleAbsGeqTwo:
 		result = (n >= 2) || (n <= -2)
 	}
-
-	// Debug: print winding check
-	fmt.Printf("Debug: winding rule %d checking n=%d: result=%v\n", w, n, result)
 	return result
 }
 
@@ -156,40 +153,55 @@ type Vertex struct {
 type Contour []Vertex
 
 func Tesselate(contours []Contour, windingRule WindingRule) ([]int, []Vertex, error) {
+	// Debug: Starting tesselation
+	fmt.Println("Tesselate: Starting tesselation")
+	fmt.Printf("Tesselate: Number of contours: %d\n", len(contours))
+	fmt.Printf("Tesselate: Winding rule: %d\n", windingRule)
+
 	t := &tesselator{}
 	// Check for invalid values in input
 	const maxAbsValue = 1e+37 // Threshold for large values
 	for _, contour := range contours {
 		for _, v := range contour {
 			if math.IsNaN(float64(v.X)) || math.IsNaN(float64(v.Y)) || math.IsNaN(float64(v.Z)) {
+				fmt.Println("Tesselate: Error - NaN value in contour point")
 				return nil, nil, fmt.Errorf("tess: NaN value in contour point")
 			}
 			if math.Abs(float64(v.X)) > maxAbsValue || math.Abs(float64(v.Y)) > maxAbsValue || math.Abs(float64(v.Z)) > maxAbsValue {
+				fmt.Println("Tesselate: Error - value too large in contour point")
 				return nil, nil, fmt.Errorf("tess: value too large in contour point")
 			}
 		}
 	}
 
-	for _, c := range contours {
+	for i, c := range contours {
+		if len(c) < 3 {
+			fmt.Printf("Tesselate: Error - contour %d has fewer than 3 vertices\n", i)
+			return nil, nil, fmt.Errorf("tess: contour %d has fewer than 3 vertices", i)
+		}
+		fmt.Printf("Tesselate: Adding contour %d with %d vertices\n", i, len(c))
 		fs := make([]float32, len(c)*3)
-		for i, v := range c {
-			fs[3*i] = v.X
-			fs[3*i+1] = v.Y
-			fs[3*i+2] = v.Z
+		for j, v := range c {
+			fs[3*j] = v.X
+			fs[3*j+1] = v.Y
+			fs[3*j+2] = v.Z
 		}
 		tessAddContour(t, 3, fs)
 	}
 
 	// Debug: Check if mesh is created
 	if t.mesh == nil {
-		fmt.Println("Debug: mesh is nil after adding contours")
+		fmt.Println("Tesselate: Error - mesh is nil after adding contours")
 		return []int{}, []Vertex{}, nil
 	}
 
 	// Debug: Print contour information
-	fmt.Printf("Debug: processing %d contours with %d total vertices\n", len(contours), len(contours[0]))
-	for i, v := range contours[0] {
-		fmt.Printf("Debug: vertex %d: (%.2f, %.2f)\n", i, v.X, v.Y)
+	fmt.Printf("Tesselate: Processing %d contours\n", len(contours))
+	if len(contours) > 0 {
+		fmt.Printf("Tesselate: First contour has %d vertices\n", len(contours[0]))
+		for i, v := range contours[0] {
+			fmt.Printf("Tesselate: Vertex %d: (%.2f, %.2f)\n", i, v.X, v.Y)
+		}
 	}
 
 	const (
@@ -198,7 +210,7 @@ func Tesselate(contours []Contour, windingRule WindingRule) ([]int, []Vertex, er
 	)
 
 	// Debug: Print mesh information
-	fmt.Println("Debug: mesh is not nil, calling tessTesselate")
+	fmt.Println("Tesselate: Calling tessTesselate")
 
 	if !tessTesselate(t,
 		windingRule,
@@ -206,12 +218,12 @@ func Tesselate(contours []Contour, windingRule WindingRule) ([]int, []Vertex, er
 		polySize,
 		vertexSize,
 		nil) {
-		fmt.Println("Debug: tessTesselate failed")
+		fmt.Println("Tesselate: Error - tessTesselate failed")
 		return nil, nil, fmt.Errorf("tess: tessTesselate failed")
 	}
 
 	// Debug: Check vertex and element counts
-	fmt.Printf("Debug: after tessTesselate, vertexCount=%d, elementCount=%d\n", t.vertexCount, t.elementCount)
+	fmt.Printf("Tesselate: After tessTesselate - vertexCount=%d, elementCount=%d\n", t.vertexCount, t.elementCount)
 
 	// Debug: Check if any faces are marked as inside
 	if t.mesh != nil {
@@ -221,7 +233,7 @@ func Tesselate(contours []Contour, windingRule WindingRule) ([]int, []Vertex, er
 				insideCount++
 			}
 		}
-		fmt.Printf("Debug: found %d faces marked as inside\n", insideCount)
+		fmt.Printf("Tesselate: Found %d faces marked as inside\n", insideCount)
 	}
 
 	vertices := make([]Vertex, t.vertexCount)
@@ -237,7 +249,7 @@ func Tesselate(contours []Contour, windingRule WindingRule) ([]int, []Vertex, er
 	}
 
 	// Debug: Print final results
-	fmt.Printf("Debug: returning %d elements and %d vertices\n", len(elements), len(vertices))
+	fmt.Printf("Tesselate: Returning %d elements and %d vertices\n", len(elements), len(vertices))
 
 	return elements, vertices, nil
 }
@@ -413,6 +425,10 @@ func tessProjectPolygon(tess *tesselator) {
 	norm[2] = tess.normal[2]
 	if norm[0] == 0 && norm[1] == 0 && norm[2] == 0 {
 		computeNormal(tess, norm)
+		computedNormal = true
+	}
+	if math.IsNaN(float64(norm[0])) || math.IsNaN(float64(norm[1])) || math.IsNaN(float64(norm[2])) {
+		norm = []float{0, 0, 1}
 		computedNormal = true
 	}
 	sUnit := tess.sUnit[:]
@@ -780,19 +796,24 @@ func outputContours(tess *tesselator, mesh *mesh, vertexSize int) {
 //	size - number of coordinates per vertex. Must be 2 or 3.
 //	vertices - vertices array
 func tessAddContour(tess *tesselator, size int, vertices []float32) {
+	fmt.Println("tessAddContour: Adding contour")
 	if tess.mesh == nil {
+		fmt.Println("tessAddContour: Creating new mesh")
 		tess.mesh = tessMeshNewMesh()
 	}
 
 	if size < 2 {
 		size = 2
+		fmt.Println("tessAddContour: Setting size to 2")
 	}
 	if size > 3 {
 		size = 3
+		fmt.Println("tessAddContour: Setting size to 3")
 	}
 
 	var e *halfEdge
 	numVertices := len(vertices) / size
+	fmt.Printf("tessAddContour: Number of vertices in contour: %d\n", numVertices)
 	src := vertices
 	for i := 0; i < numVertices; i++ {
 		coords := src
@@ -800,11 +821,13 @@ func tessAddContour(tess *tesselator, size int, vertices []float32) {
 
 		if e == nil {
 			// Make a self-loop (one vertex, one edge).
+			fmt.Println("tessAddContour: Creating first edge (self-loop)")
 			e = tessMeshMakeEdge(tess.mesh)
 			tessMeshSplice(tess.mesh, e, e.Sym)
 		} else {
 			// Create a new vertex and edge which immediately follow e
 			// in the ordering around the left face.
+			fmt.Println("tessAddContour: Splitting edge and moving to next")
 			tessMeshSplitEdge(tess.mesh, e)
 			e = e.Lnext
 		}
@@ -819,6 +842,7 @@ func tessAddContour(tess *tesselator, size int, vertices []float32) {
 		}
 		// Store the insertion number so that the vertex can be later recognized.
 		e.Org.idx = tess.vertexIndexCounter
+		fmt.Printf("tessAddContour: Added vertex %d: (%.2f, %.2f, %.2f)\n", tess.vertexIndexCounter, coords[0], coords[1], e.Org.coords[2])
 		tess.vertexIndexCounter++
 
 		// The winding of an edge says how the winding number changes as we
@@ -828,6 +852,7 @@ func tessAddContour(tess *tesselator, size int, vertices []float32) {
 		e.winding = 1
 		e.Sym.winding = -1
 	}
+	fmt.Println("tessAddContour: Finished adding contour")
 }
 
 // tessTesselate: - tesselate contours.

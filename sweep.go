@@ -221,32 +221,44 @@ func fixUpperEdge(tess *tesselator, reg *activeRegion, newEdge *halfEdge) {
 }
 
 func topLeftRegion(tess *tesselator, reg *activeRegion) *activeRegion {
+	if reg == nil || reg.eUp == nil {
+		println("WARNING: reg or reg.eUp is nil in topLeftRegion")
+		return reg
+	}
 	org := reg.eUp.Org
 
 	// Find the region above the uppermost edge with the same origin
 	for {
 		reg = reg.above()
-		if reg.eUp.Org != org {
+		if reg == nil || reg.eUp == nil || reg.eUp.Org != org {
 			break
 		}
 	}
 
 	// If the edge above was a temporary edge introduced by ConnectRightVertex,
 	// now is the time to fix it.
-	if reg.fixUpperEdge {
-		e := tessMeshConnect(tess.mesh, reg.below().eUp.Sym, reg.eUp.Lnext)
-		fixUpperEdge(tess, reg, e)
-		reg = reg.above()
+	if reg != nil && reg.fixUpperEdge {
+		if reg.below() == nil || reg.below().eUp == nil || reg.below().eUp.Sym == nil || reg.eUp == nil || reg.eUp.Lnext == nil {
+			println("WARNING: nil values detected in fixUpperEdge logic in topLeftRegion")
+		} else {
+			e := tessMeshConnect(tess.mesh, reg.below().eUp.Sym, reg.eUp.Lnext)
+			fixUpperEdge(tess, reg, e)
+			reg = reg.above()
+		}
 	}
 	return reg
 }
 
 func topRightRegion(reg *activeRegion) *activeRegion {
+	if reg == nil || reg.eUp == nil {
+		println("WARNING: reg or reg.eUp is nil in topRightRegion")
+		return reg
+	}
 	d := reg.eUp.dst()
 	// Find the region above the uppermost edge with the same destination
 	for {
 		reg = reg.above()
-		if reg.eUp.dst() != d {
+		if reg == nil || reg.eUp == nil || reg.eUp.dst() != d {
 			break
 		}
 	}
@@ -267,7 +279,7 @@ func addRegionBelow(tess *tesselator, regAbove *activeRegion, eNewUp *halfEdge) 
 
 func computeWinding(tess *tesselator, reg *activeRegion) {
 	reg.windingNumber = reg.above().windingNumber + int(reg.eUp.winding)
-	reg.inside = tess.windingRule.isInside(reg.windingNumber)
+	reg.inside = tess.isInside(reg.windingNumber)
 }
 
 // finishRegion deletes a region from the sweep line.  This happens when the upper
@@ -378,7 +390,7 @@ func addRightEdges(tess *tesselator, regUp *activeRegion, eFirst *halfEdge, eLas
 		}
 		// Compute the winding number and "inside" flag for the new regions
 		reg.windingNumber = regPrev.windingNumber - int(e.winding)
-		reg.inside = tess.windingRule.isInside(reg.windingNumber)
+		reg.inside = tess.isInside(reg.windingNumber)
 
 		// Check for two outgoing edges with same slope -- process these
 		// before any intersection tests (see example in tessComputeInterior).

@@ -19,82 +19,82 @@
 === RUN   TestVertLeq
 --- PASS: TestVertLeq (0.00s)
 === RUN   TestDefaultTesselateWithHole
-makeVertex: creating vertex ID 1 at address 0x1400014cc80
-Edge origin before update: 0x1400014cc80 (ID: 1 )
-vNext: 0x1400015e300 (ID: 0 )
-makeVertex: setting anEdge for vertex ID 1 to edge 0x14000123100
+makeVertex: creating vertex ID 1 at address 0x1400015ec80
+Edge origin before update: 0x1400015ec80 (ID: 1 )
+vNext: 0x14000170300 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 1 to edge 0x14000135100
 makeVertex: updating edges for vertex ID 1
-  Updated edge 0x14000123100 from vertex 1 to vertex 1
-makeVertex: creating vertex ID 2 at address 0x1400014ccd0
-Edge origin before update: 0x1400014ccd0 (ID: 2 )
-vNext: 0x1400015e300 (ID: 0 )
-makeVertex: setting anEdge for vertex ID 2 to edge 0x14000123140
+  Updated edge 0x14000135100 from vertex 1 to vertex 1
+makeVertex: creating vertex ID 2 at address 0x1400015ecd0
+Edge origin before update: 0x1400015ecd0 (ID: 2 )
+vNext: 0x14000170300 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 2 to edge 0x14000135140
 makeVertex: updating edges for vertex ID 2
-  Updated edge 0x14000123140 from vertex 2 to vertex 2
+  Updated edge 0x14000135140 from vertex 2 to vertex 2
 killVertex: deleting vertex ID 2
   vPrev ID: 1
   vNext ID: 0
   Updating both vPrev and vNext
-  Updated newOrg(ID: 1 ) anEdge to 0x14000123140
+  Updated newOrg(ID: 1 ) anEdge to 0x14000135140
 Creating new vertex in tessMeshAddEdgeVertex with ID: 3
-makeVertex: creating vertex ID 3 at address 0x1400014cd20
-Edge origin before update: 0x1400014cd20 (ID: 3 )
-vNext: 0x1400014cc80 (ID: 1 )
-makeVertex: setting anEdge for vertex ID 3 to edge 0x140001231c0
+makeVertex: creating vertex ID 3 at address 0x1400015ed20
+Edge origin before update: 0x1400015ed20 (ID: 3 )
+vNext: 0x1400015ec80 (ID: 1 )
+makeVertex: setting anEdge for vertex ID 3 to edge 0x140001351c0
 makeVertex: updating edges for vertex ID 3
-  Updated edge 0x140001231c0 from vertex 3 to vertex 3
+  Updated edge 0x140001351c0 from vertex 3 to vertex 3
 Creating new vertex in tessMeshAddEdgeVertex with ID: 4
-makeVertex: creating vertex ID 4 at address 0x1400014cd70
-Edge origin before update: 0x1400014cd70 (ID: 4 )
-vNext: 0x1400014cc80 (ID: 1 )
-makeVertex: setting anEdge for vertex ID 4 to edge 0x14000123240
+makeVertex: creating vertex ID 4 at address 0x1400015ed70
+Edge origin before update: 0x1400015ed70 (ID: 4 )
+vNext: 0x1400015ec80 (ID: 1 )
+makeVertex: setting anEdge for vertex ID 4 to edge 0x14000135240
 makeVertex: updating edges for vertex ID 4
-  Updated edge 0x14000123240 from vertex 4 to vertex 4
+  Updated edge 0x14000135240 from vertex 4 to vertex 4
 Creating new vertex in tessMeshAddEdgeVertex with ID: 5
-makeVertex: creating vertex ID 5 at address 0x1400014cdc0
-Edge origin before update: 0x1400014cdc0 (ID: 5 )
-vNext: 0x1400014cc80 (ID: 1 )
-makeVertex: setting anEdge for vertex ID 5 to edge 0x140001232c0
+makeVertex: creating vertex ID 5 at address 0x1400015edc0
+Edge origin before update: 0x1400015edc0 (ID: 5 )
+vNext: 0x1400015ec80 (ID: 1 )
+makeVertex: setting anEdge for vertex ID 5 to edge 0x140001352c0
 makeVertex: updating edges for vertex ID 5
-  Updated edge 0x140001232c0 from vertex 5 to vertex 5
-makeVertex: creating vertex ID 6 at address 0x1400014ce10
-Edge origin before update: 0x1400014ce10 (ID: 6 )
-vNext: 0x1400015e300 (ID: 0 )
-makeVertex: setting anEdge for vertex ID 6 to edge 0x14000123300
+  Updated edge 0x140001352c0 from vertex 5 to vertex 5
+makeVertex: creating vertex ID 6 at address 0x1400015ee10
+Edge origin before update: 0x1400015ee10 (ID: 6 )
+vNext: 0x14000170300 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 6 to edge 0x14000135300
 makeVertex: updating edges for vertex ID 6
-  Updated edge 0x14000123300 from vertex 6 to vertex 6
-makeVertex: creating vertex ID 7 at address 0x1400014ce60
-Edge origin before update: 0x1400014ce60 (ID: 7 )
-vNext: 0x1400015e300 (ID: 0 )
-makeVertex: setting anEdge for vertex ID 7 to edge 0x14000123340
+  Updated edge 0x14000135300 from vertex 6 to vertex 6
+makeVertex: creating vertex ID 7 at address 0x1400015ee60
+Edge origin before update: 0x1400015ee60 (ID: 7 )
+vNext: 0x14000170300 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 7 to edge 0x14000135340
 makeVertex: updating edges for vertex ID 7
-  Updated edge 0x14000123340 from vertex 7 to vertex 7
+  Updated edge 0x14000135340 from vertex 7 to vertex 7
 killVertex: deleting vertex ID 7
   vPrev ID: 6
   vNext ID: 0
   Updating both vPrev and vNext
-  Updated newOrg(ID: 6 ) anEdge to 0x14000123340
+  Updated newOrg(ID: 6 ) anEdge to 0x14000135340
 Creating new vertex in tessMeshAddEdgeVertex with ID: 8
-makeVertex: creating vertex ID 8 at address 0x1400014ceb0
-Edge origin before update: 0x1400014ceb0 (ID: 8 )
-vNext: 0x1400014ce10 (ID: 6 )
-makeVertex: setting anEdge for vertex ID 8 to edge 0x140001233c0
+makeVertex: creating vertex ID 8 at address 0x1400015eeb0
+Edge origin before update: 0x1400015eeb0 (ID: 8 )
+vNext: 0x1400015ee10 (ID: 6 )
+makeVertex: setting anEdge for vertex ID 8 to edge 0x140001353c0
 makeVertex: updating edges for vertex ID 8
-  Updated edge 0x140001233c0 from vertex 8 to vertex 8
+  Updated edge 0x140001353c0 from vertex 8 to vertex 8
 Creating new vertex in tessMeshAddEdgeVertex with ID: 9
-makeVertex: creating vertex ID 9 at address 0x1400014cf00
-Edge origin before update: 0x1400014cf00 (ID: 9 )
-vNext: 0x1400014ce10 (ID: 6 )
-makeVertex: setting anEdge for vertex ID 9 to edge 0x14000123440
+makeVertex: creating vertex ID 9 at address 0x1400015ef00
+Edge origin before update: 0x1400015ef00 (ID: 9 )
+vNext: 0x1400015ee10 (ID: 6 )
+makeVertex: setting anEdge for vertex ID 9 to edge 0x14000135440
 makeVertex: updating edges for vertex ID 9
-  Updated edge 0x14000123440 from vertex 9 to vertex 9
+  Updated edge 0x14000135440 from vertex 9 to vertex 9
 Creating new vertex in tessMeshAddEdgeVertex with ID: 10
-makeVertex: creating vertex ID 10 at address 0x1400014cf50
-Edge origin before update: 0x1400014cf50 (ID: 10 )
-vNext: 0x1400014ce10 (ID: 6 )
-makeVertex: setting anEdge for vertex ID 10 to edge 0x140001234c0
+makeVertex: creating vertex ID 10 at address 0x1400015ef50
+Edge origin before update: 0x1400015ef50 (ID: 10 )
+vNext: 0x1400015ee10 (ID: 6 )
+makeVertex: setting anEdge for vertex ID 10 to edge 0x140001354c0
 makeVertex: updating edges for vertex ID 10
-  Updated edge 0x140001234c0 from vertex 10 to vertex 10
+  Updated edge 0x140001354c0 from vertex 10 to vertex 10
 Debug: processing 2 contours with 4 total vertices
 Debug: vertex 0: (0.00, 0.00)
 Debug: vertex 1: (3.00, 0.00)
@@ -103,154 +103,168 @@ Debug: vertex 3: (0.00, 3.00)
 Debug: mesh is not nil, calling tessTesselate
 Debug: computed signed area: -20.000000
 Debug: reversing orientation due to negative area
-makeVertex: creating vertex ID 11 at address 0x1400014cfa0
+makeVertex: creating vertex ID 11 at address 0x1400015efa0
 WARNING: Creating vertex with ID 11 or 13!
   Call stack:
 goroutine 44 [running]:
-github.com/flywave/go-tesselator.makeVertex(0x1400014cfa0, 0x14000123580, 0x1400015e300)
+github.com/flywave/go-tesselator.makeVertex(0x1400015efa0, 0x14000135580, 0x14000170300)
 	/Users/xuning/Work/go-tesselator/mesh.go:272 +0xf0
-github.com/flywave/go-tesselator.tessMeshMakeEdge(0x1400015e300)
+github.com/flywave/go-tesselator.tessMeshMakeEdge(0x14000170300)
 	/Users/xuning/Work/go-tesselator/mesh.go:489 +0xd4
-github.com/flywave/go-tesselator.addSentinel(0x14000124a90, 0x14ce10?, 0x40c00000, 0xc0400000)
-	/Users/xuning/Work/go-tesselator/sweep.go:1140 +0x40
-github.com/flywave/go-tesselator.initEdgeDict(0x14000124a90)
-	/Users/xuning/Work/go-tesselator/sweep.go:1190 +0x304
-github.com/flywave/go-tesselator.tessComputeInterior(0x14000124a90)
-	/Users/xuning/Work/go-tesselator/sweep.go:1310 +0x30
-github.com/flywave/go-tesselator.tessTesselate(0x14000124a90, 0x1400010c038?, 0x0, 0x3, 0x1?, {0x0?, 0x3?, 0x30?})
+github.com/flywave/go-tesselator.addSentinel(0x14000136a90, 0x15ee10?, 0x40c00000, 0xc0400000)
+	/Users/xuning/Work/go-tesselator/sweep.go:1139 +0x40
+github.com/flywave/go-tesselator.initEdgeDict(0x14000136a90)
+	/Users/xuning/Work/go-tesselator/sweep.go:1189 +0x304
+github.com/flywave/go-tesselator.tessComputeInterior(0x14000136a90)
+	/Users/xuning/Work/go-tesselator/sweep.go:1309 +0x30
+github.com/flywave/go-tesselator.tessTesselate(0x14000136a90, 0x1400011c038?, 0x0, 0x3, 0x1?, {0x0?, 0x3?, 0x30?})
 	/Users/xuning/Work/go-tesselator/tess.go:875 +0xb0
-github.com/flywave/go-tesselator.Tesselate({0x14000113200, 0x2, 0x14000109f38?}, 0x2)
+github.com/flywave/go-tesselator.Tesselate({0x14000123200, 0x2, 0x14000119f38?}, 0x2)
 	/Users/xuning/Work/go-tesselator/tess.go:203 +0x314
-github.com/flywave/go-tesselator.TestDefaultTesselateWithHole(0x14000129880)
-	/Users/xuning/Work/go-tesselator/tess_test.go:158 +0x54
-testing.tRunner(0x14000129880, 0x1002ec730)
+github.com/flywave/go-tesselator.TestDefaultTesselateWithHole(0x14000103c00)
+	/Users/xuning/Work/go-tesselator/tess_test.go:159 +0x54
+testing.tRunner(0x14000103c00, 0x10060c730)
 	/usr/local/go/src/testing/testing.go:1792 +0xe4
 created by testing.(*T).Run in goroutine 1
 	/usr/local/go/src/testing/testing.go:1851 +0x374
 
-Edge origin before update: 0x1400014cfa0 (ID: 11 )
-vNext: 0x1400015e300 (ID: 0 )
-makeVertex: setting anEdge for vertex ID 11 to edge 0x14000123580
+Edge origin before update: 0x1400015efa0 (ID: 11 )
+vNext: 0x14000170300 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 11 to edge 0x14000135580
 makeVertex: updating edges for vertex ID 11
-  Updated edge 0x14000123580 from vertex 11 to vertex 11
-makeVertex: creating vertex ID 12 at address 0x1400014cff0
-Edge origin before update: 0x1400014cff0 (ID: 12 )
-vNext: 0x1400015e300 (ID: 0 )
-makeVertex: setting anEdge for vertex ID 12 to edge 0x140001235c0
+  Updated edge 0x14000135580 from vertex 11 to vertex 11
+makeVertex: creating vertex ID 12 at address 0x1400015eff0
+Edge origin before update: 0x1400015eff0 (ID: 12 )
+vNext: 0x14000170300 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 12 to edge 0x140001355c0
 makeVertex: updating edges for vertex ID 12
-  Updated edge 0x140001235c0 from vertex 12 to vertex 12
-makeVertex: creating vertex ID 13 at address 0x1400014d040
+  Updated edge 0x140001355c0 from vertex 12 to vertex 12
+makeVertex: creating vertex ID 13 at address 0x1400015f040
 WARNING: Creating vertex with ID 11 or 13!
   Call stack:
 goroutine 44 [running]:
-github.com/flywave/go-tesselator.makeVertex(0x1400014d040, 0x14000123600, 0x1400015e300)
+github.com/flywave/go-tesselator.makeVertex(0x1400015f040, 0x14000135600, 0x14000170300)
 	/Users/xuning/Work/go-tesselator/mesh.go:272 +0xf0
-github.com/flywave/go-tesselator.tessMeshMakeEdge(0x1400015e300)
+github.com/flywave/go-tesselator.tessMeshMakeEdge(0x14000170300)
 	/Users/xuning/Work/go-tesselator/mesh.go:489 +0xd4
-github.com/flywave/go-tesselator.addSentinel(0x14000124a90, 0x14ce10?, 0x40c00000, 0x40c00000)
-	/Users/xuning/Work/go-tesselator/sweep.go:1140 +0x40
-github.com/flywave/go-tesselator.initEdgeDict(0x14000124a90)
-	/Users/xuning/Work/go-tesselator/sweep.go:1191 +0x318
-github.com/flywave/go-tesselator.tessComputeInterior(0x14000124a90)
-	/Users/xuning/Work/go-tesselator/sweep.go:1310 +0x30
-github.com/flywave/go-tesselator.tessTesselate(0x14000124a90, 0x1400010c038?, 0x0, 0x3, 0x1?, {0x0?, 0x3?, 0x30?})
+github.com/flywave/go-tesselator.addSentinel(0x14000136a90, 0x15ee10?, 0x40c00000, 0x40c00000)
+	/Users/xuning/Work/go-tesselator/sweep.go:1139 +0x40
+github.com/flywave/go-tesselator.initEdgeDict(0x14000136a90)
+	/Users/xuning/Work/go-tesselator/sweep.go:1190 +0x318
+github.com/flywave/go-tesselator.tessComputeInterior(0x14000136a90)
+	/Users/xuning/Work/go-tesselator/sweep.go:1309 +0x30
+github.com/flywave/go-tesselator.tessTesselate(0x14000136a90, 0x1400011c038?, 0x0, 0x3, 0x1?, {0x0?, 0x3?, 0x30?})
 	/Users/xuning/Work/go-tesselator/tess.go:875 +0xb0
-github.com/flywave/go-tesselator.Tesselate({0x14000113200, 0x2, 0x14000109f38?}, 0x2)
+github.com/flywave/go-tesselator.Tesselate({0x14000123200, 0x2, 0x14000119f38?}, 0x2)
 	/Users/xuning/Work/go-tesselator/tess.go:203 +0x314
-github.com/flywave/go-tesselator.TestDefaultTesselateWithHole(0x14000129880)
-	/Users/xuning/Work/go-tesselator/tess_test.go:158 +0x54
-testing.tRunner(0x14000129880, 0x1002ec730)
+github.com/flywave/go-tesselator.TestDefaultTesselateWithHole(0x14000103c00)
+	/Users/xuning/Work/go-tesselator/tess_test.go:159 +0x54
+testing.tRunner(0x14000103c00, 0x10060c730)
 	/usr/local/go/src/testing/testing.go:1792 +0xe4
 created by testing.(*T).Run in goroutine 1
 	/usr/local/go/src/testing/testing.go:1851 +0x374
 
-Edge origin before update: 0x1400014d040 (ID: 13 )
-vNext: 0x1400015e300 (ID: 0 )
-makeVertex: setting anEdge for vertex ID 13 to edge 0x14000123600
+Edge origin before update: 0x1400015f040 (ID: 13 )
+vNext: 0x14000170300 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 13 to edge 0x14000135600
 makeVertex: updating edges for vertex ID 13
-  Updated edge 0x14000123600 from vertex 13 to vertex 13
-makeVertex: creating vertex ID 14 at address 0x1400014d090
-Edge origin before update: 0x1400014d090 (ID: 14 )
-vNext: 0x1400015e300 (ID: 0 )
-makeVertex: setting anEdge for vertex ID 14 to edge 0x14000123640
+  Updated edge 0x14000135600 from vertex 13 to vertex 13
+makeVertex: creating vertex ID 14 at address 0x1400015f090
+Edge origin before update: 0x1400015f090 (ID: 14 )
+vNext: 0x14000170300 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 14 to edge 0x14000135640
 makeVertex: updating edges for vertex ID 14
-  Updated edge 0x14000123640 from vertex 14 to vertex 14
+  Updated edge 0x14000135640 from vertex 14 to vertex 14
 WARNING: regLo is nil in connectLeftVertex
-Creating new vertex in tessMeshAddEdgeVertex with ID: 15
-makeVertex: creating vertex ID 15 at address 0x1400014d0e0
-Edge origin before update: 0x1400014d0e0 (ID: 15 )
-vNext: 0x1400014cfa0 (ID: 11 )
-makeVertex: setting anEdge for vertex ID 15 to edge 0x140001236c0
+WARNING: regUp is nil in connectLeftVertex
+killVertex: deleting vertex ID 14
+  vPrev ID: 13
+  vNext ID: 0
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 6 ) anEdge to 0x14000135640
+Debug: winding rule 2 checking n=1: result=true
+makeVertex: creating vertex ID 15 at address 0x1400015f0e0
+Edge origin before update: 0x1400015ee10 (ID: 6 )
+vNext: 0x1400015ee10 (ID: 6 )
+makeVertex: setting anEdge for vertex ID 15 to edge 0x14000135640
 makeVertex: updating edges for vertex ID 15
-  Updated edge 0x140001236c0 from vertex 15 to vertex 15
+  Updated edge 0x14000135640 from vertex 6 to vertex 15
 killVertex: deleting vertex ID 15
+  vPrev ID: 10
+  vNext ID: 6
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 6 ) anEdge to 0x14000135640
+Debug: winding rule 2 checking n=1: result=true
+Debug: winding rule 2 checking n=0: result=false
+WARNING: eUp or its Sym/Org is nil in walkDirtyRegions
+  eUp is nil
+Debug: marking face as inside=true, winding=1
+Debug: winding rule 2 checking n=1: result=true
+Creating new vertex in tessMeshAddEdgeVertex with ID: 16
+makeVertex: creating vertex ID 16 at address 0x1400015f130
+Edge origin before update: 0x1400015f130 (ID: 16 )
+vNext: 0x1400015f040 (ID: 13 )
+makeVertex: setting anEdge for vertex ID 16 to edge 0x140001356c0
+makeVertex: updating edges for vertex ID 16
+  Updated edge 0x140001356c0 from vertex 16 to vertex 16
+killVertex: deleting vertex ID 16
+  vPrev ID: 12
+  vNext ID: 13
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 9 ) anEdge to 0x140001356c0
+WARNING: eUp or its Sym/Org is nil in walkDirtyRegions
+  eUp is nil
+Debug: marking face as inside=false, winding=0
+Debug: winding rule 2 checking n=0: result=false
+Debug: marking face as inside=true, winding=1
+makeVertex: creating vertex ID 17 at address 0x1400015f180
+Edge origin before update: 0x1400015ef00 (ID: 9 )
+vNext: 0x1400015ef00 (ID: 9 )
+makeVertex: setting anEdge for vertex ID 17 to edge 0x14000135380
+makeVertex: updating edges for vertex ID 17
+  Updated edge 0x14000135380 from vertex 9 to vertex 17
+killVertex: deleting vertex ID 17
+  vPrev ID: 8
+  vNext ID: 9
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 9 ) anEdge to 0x14000135380
+Debug: marking face as inside=true, winding=1
+Debug: marking face as inside=false, winding=0
+Debug: winding rule 2 checking n=0: result=false
+WARNING: eUp or its Sym/Org is nil in walkDirtyRegions
+  eUp is nil
+Debug: winding rule 2 checking n=1: result=true
+Debug: winding rule 2 checking n=0: result=false
+Creating new vertex in tessMeshAddEdgeVertex with ID: 18
+makeVertex: creating vertex ID 18 at address 0x1400015f1d0
+Edge origin before update: 0x1400015f1d0 (ID: 18 )
+vNext: 0x1400015ed70 (ID: 4 )
+makeVertex: setting anEdge for vertex ID 18 to edge 0x14000135780
+makeVertex: updating edges for vertex ID 18
+  Updated edge 0x14000135780 from vertex 18 to vertex 18
+killVertex: deleting vertex ID 18
+  vPrev ID: 3
+  vNext ID: 4
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 1 ) anEdge to 0x14000135780
+Creating new vertex in tessMeshAddEdgeVertex with ID: 19
+makeVertex: creating vertex ID 19 at address 0x1400015f220
+Edge origin before update: 0x1400015f220 (ID: 19 )
+vNext: 0x1400015efa0 (ID: 11 )
+makeVertex: setting anEdge for vertex ID 19 to edge 0x14000135800
+makeVertex: updating edges for vertex ID 19
+  Updated edge 0x14000135800 from vertex 19 to vertex 19
+killVertex: deleting vertex ID 19
   vPrev ID: 6
   vNext ID: 11
   Updating both vPrev and vNext
-  Updated newOrg(ID: 1 ) anEdge to 0x140001236c0
+  Updated newOrg(ID: 1 ) anEdge to 0x14000135800
+WARNING: regLo is nil when accessing eUp and eLo
 WARNING: regLo is nil in connectLeftVertex
-makeVertex: creating vertex ID 16 at address 0x1400014d130
-Edge origin before update: 0x1400014cc80 (ID: 1 )
-vNext: 0x1400014cc80 (ID: 1 )
-makeVertex: setting anEdge for vertex ID 16 to edge 0x140001236c0
-makeVertex: updating edges for vertex ID 16
-  Updated edge 0x140001236c0 from vertex 1 to vertex 16
-  Updated edge 0x14000123100 from vertex 1 to vertex 16
-  Updated edge 0x14000123280 from vertex 1 to vertex 16
-WARNING: regLo is nil in connectLeftVertex
-killVertex: deleting vertex ID 12
-  vPrev ID: 11
-  vNext ID: 13
-  Updating both vPrev and vNext
-  Updated newOrg(ID: 5 ) anEdge to 0x140001235c0
-makeVertex: creating vertex ID 17 at address 0x1400014d180
-Edge origin before update: 0x1400014cdc0 (ID: 5 )
-vNext: 0x1400014cdc0 (ID: 5 )
-makeVertex: setting anEdge for vertex ID 17 to edge 0x14000123200
-makeVertex: updating edges for vertex ID 17
-  Updated edge 0x14000123200 from vertex 5 to vertex 17
-killVertex: deleting vertex ID 17
-  vPrev ID: 4
-  vNext ID: 5
-  Updating both vPrev and vNext
-  Updated newOrg(ID: 5 ) anEdge to 0x14000123200
-Debug: winding rule 2 checking n=1: result=true
-Debug: winding rule 2 checking n=0: result=false
-Debug: winding rule 2 checking n=0: result=false
-killVertex: deleting vertex ID 16
-  vPrev ID: 5
-  vNext ID: 1
-  Updating both vPrev and vNext
-  Updated newOrg(ID: 1 ) anEdge to 0x140001236c0
-    tess_test.go:155: Recovered from panic: runtime error: invalid memory address or nil pointer dereference
-        goroutine 44 [running]:
-        runtime/debug.Stack()
-        	/usr/local/go/src/runtime/debug/stack.go:26 +0x64
-        github.com/flywave/go-tesselator.TestDefaultTesselateWithHole.func1()
-        	/Users/xuning/Work/go-tesselator/tess_test.go:155 +0x3c
-        panic({0x1002c53e0?, 0x1003d5c10?})
-        	/usr/local/go/src/runtime/panic.go:792 +0x124
-        github.com/flywave/go-tesselator.addRightEdges(0x14000124a90, 0x14000116600, 0x140001235c0?, 0x140001235c0, 0x140001235c0, 0x1)
-        	/Users/xuning/Work/go-tesselator/sweep.go:369 +0xe8
-        github.com/flywave/go-tesselator.connectLeftDegenerate(0x14000124a90, 0x1400016dc50?, 0x1400014cdc0)
-        	/Users/xuning/Work/go-tesselator/sweep.go:986 +0x350
-        github.com/flywave/go-tesselator.connectLeftVertex(0x14000124a90, 0x1400014cdc0)
-        	/Users/xuning/Work/go-tesselator/sweep.go:1030 +0x274
-        github.com/flywave/go-tesselator.sweepEvent(0x1002eec40?, 0x14000123500?)
-        	/Users/xuning/Work/go-tesselator/sweep.go:1097 +0x5c
-        github.com/flywave/go-tesselator.tessComputeInterior(0x14000124a90)
-        	/Users/xuning/Work/go-tesselator/sweep.go:1339 +0x48
-        github.com/flywave/go-tesselator.tessTesselate(0x14000124a90, 0x1400010c038?, 0x0, 0x3, 0x1?, {0x0?, 0x3?, 0x30?})
-        	/Users/xuning/Work/go-tesselator/tess.go:875 +0xb0
-        github.com/flywave/go-tesselator.Tesselate({0x14000113200, 0x2, 0x14000109f38?}, 0x2)
-        	/Users/xuning/Work/go-tesselator/tess.go:203 +0x314
-        github.com/flywave/go-tesselator.TestDefaultTesselateWithHole(0x14000129880)
-        	/Users/xuning/Work/go-tesselator/tess_test.go:158 +0x54
-        testing.tRunner(0x14000129880, 0x1002ec730)
-        	/usr/local/go/src/testing/testing.go:1792 +0xe4
-        created by testing.(*T).Run in goroutine 1
-        	/usr/local/go/src/testing/testing.go:1851 +0x374
---- PASS: TestDefaultTesselateWithHole (0.00s)
+Debug: after tessTesselate, vertexCount=4, elementCount=2
+Debug: returning 6 elements and 4 vertices
+    tess_test.go:166: Expected 24 element indices (8 triangles), got 6
+--- FAIL: TestDefaultTesselateWithHole (0.00s)
 === RUN   TestEmptyContour
 Debug: mesh is nil after adding contours
 --- PASS: TestEmptyContour (0.00s)
@@ -258,130 +272,533 @@ Debug: mesh is nil after adding contours
 Testing single line contour with vertices:
   Vertex 0 : +0.000000e+000 , +0.000000e+000
   Vertex 1 : +0.000000e+000 , +1.000000e+000
-makeVertex: creating vertex ID 18 at address 0x1400014d270
-Edge origin before update: 0x1400014d270 (ID: 18 )
-vNext: 0x1400015e400 (ID: 0 )
-makeVertex: setting anEdge for vertex ID 18 to edge 0x14000123700
-makeVertex: updating edges for vertex ID 18
-  Updated edge 0x14000123700 from vertex 18 to vertex 18
-makeVertex: creating vertex ID 19 at address 0x1400014d2c0
-Edge origin before update: 0x1400014d2c0 (ID: 19 )
-vNext: 0x1400015e400 (ID: 0 )
-makeVertex: setting anEdge for vertex ID 19 to edge 0x14000123740
-makeVertex: updating edges for vertex ID 19
-  Updated edge 0x14000123740 from vertex 19 to vertex 19
-killVertex: deleting vertex ID 19
-  vPrev ID: 18
+makeVertex: creating vertex ID 20 at address 0x1400015f310
+Edge origin before update: 0x1400015f310 (ID: 20 )
+vNext: 0x14000170400 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 20 to edge 0x14000135840
+makeVertex: updating edges for vertex ID 20
+  Updated edge 0x14000135840 from vertex 20 to vertex 20
+makeVertex: creating vertex ID 21 at address 0x1400015f360
+Edge origin before update: 0x1400015f360 (ID: 21 )
+vNext: 0x14000170400 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 21 to edge 0x14000135880
+makeVertex: updating edges for vertex ID 21
+  Updated edge 0x14000135880 from vertex 21 to vertex 21
+killVertex: deleting vertex ID 21
+  vPrev ID: 20
   vNext ID: 0
   Updating both vPrev and vNext
-  Updated newOrg(ID: 18 ) anEdge to 0x14000123740
-Creating new vertex in tessMeshAddEdgeVertex with ID: 20
-makeVertex: creating vertex ID 20 at address 0x1400014d310
-Edge origin before update: 0x1400014d310 (ID: 20 )
-vNext: 0x1400014d270 (ID: 18 )
-makeVertex: setting anEdge for vertex ID 20 to edge 0x140001237c0
-makeVertex: updating edges for vertex ID 20
-  Updated edge 0x140001237c0 from vertex 20 to vertex 20
+  Updated newOrg(ID: 20 ) anEdge to 0x14000135880
+Creating new vertex in tessMeshAddEdgeVertex with ID: 22
+makeVertex: creating vertex ID 22 at address 0x1400015f3b0
+Edge origin before update: 0x1400015f3b0 (ID: 22 )
+vNext: 0x1400015f310 (ID: 20 )
+makeVertex: setting anEdge for vertex ID 22 to edge 0x14000135900
+makeVertex: updating edges for vertex ID 22
+  Updated edge 0x14000135900 from vertex 22 to vertex 22
 Debug: processing 1 contours with 2 total vertices
 Debug: vertex 0: (0.00, 0.00)
 Debug: vertex 1: (0.00, 1.00)
 Debug: mesh is not nil, calling tessTesselate
 Debug: computed signed area: 0.000000
 Debug: keeping original orientation
-makeVertex: creating vertex ID 21 at address 0x1400014d360
-Edge origin before update: 0x1400014d360 (ID: 21 )
-vNext: 0x1400015e400 (ID: 0 )
-makeVertex: setting anEdge for vertex ID 21 to edge 0x14000123840
-makeVertex: updating edges for vertex ID 21
-  Updated edge 0x14000123840 from vertex 21 to vertex 21
-makeVertex: creating vertex ID 22 at address 0x1400014d3b0
-Edge origin before update: 0x1400014d3b0 (ID: 22 )
-vNext: 0x1400015e400 (ID: 0 )
-makeVertex: setting anEdge for vertex ID 22 to edge 0x14000123880
-makeVertex: updating edges for vertex ID 22
-  Updated edge 0x14000123880 from vertex 22 to vertex 22
-makeVertex: creating vertex ID 23 at address 0x1400014d400
-Edge origin before update: 0x1400014d400 (ID: 23 )
-vNext: 0x1400015e400 (ID: 0 )
-makeVertex: setting anEdge for vertex ID 23 to edge 0x140001238c0
+makeVertex: creating vertex ID 23 at address 0x1400015f400
+Edge origin before update: 0x1400015f400 (ID: 23 )
+vNext: 0x14000170400 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 23 to edge 0x14000135980
 makeVertex: updating edges for vertex ID 23
-  Updated edge 0x140001238c0 from vertex 23 to vertex 23
-makeVertex: creating vertex ID 24 at address 0x1400014d450
-Edge origin before update: 0x1400014d450 (ID: 24 )
-vNext: 0x1400015e400 (ID: 0 )
-makeVertex: setting anEdge for vertex ID 24 to edge 0x14000123900
+  Updated edge 0x14000135980 from vertex 23 to vertex 23
+makeVertex: creating vertex ID 24 at address 0x1400015f450
+Edge origin before update: 0x1400015f450 (ID: 24 )
+vNext: 0x14000170400 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 24 to edge 0x140001359c0
 makeVertex: updating edges for vertex ID 24
-  Updated edge 0x14000123900 from vertex 24 to vertex 24
-WARNING: regLo is nil in connectLeftVertex
-Creating new vertex in tessMeshAddEdgeVertex with ID: 25
-makeVertex: creating vertex ID 25 at address 0x1400014d4a0
-Edge origin before update: 0x1400014d4a0 (ID: 25 )
-vNext: 0x1400014d360 (ID: 21 )
-makeVertex: setting anEdge for vertex ID 25 to edge 0x14000123980
+  Updated edge 0x140001359c0 from vertex 24 to vertex 24
+makeVertex: creating vertex ID 25 at address 0x1400015f4a0
+Edge origin before update: 0x1400015f4a0 (ID: 25 )
+vNext: 0x14000170400 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 25 to edge 0x14000135a00
 makeVertex: updating edges for vertex ID 25
-  Updated edge 0x14000123980 from vertex 25 to vertex 25
-killVertex: deleting vertex ID 25
-  vPrev ID: 18
-  vNext ID: 21
-  Updating both vPrev and vNext
-  Updated newOrg(ID: 18 ) anEdge to 0x14000123980
-WARNING: regLo is nil in connectLeftVertex
-makeVertex: creating vertex ID 26 at address 0x1400014d4f0
-Edge origin before update: 0x1400014d270 (ID: 18 )
-vNext: 0x1400014d270 (ID: 18 )
-makeVertex: setting anEdge for vertex ID 26 to edge 0x14000123980
+  Updated edge 0x14000135a00 from vertex 25 to vertex 25
+makeVertex: creating vertex ID 26 at address 0x1400015f4f0
+Edge origin before update: 0x1400015f4f0 (ID: 26 )
+vNext: 0x14000170400 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 26 to edge 0x14000135a40
 makeVertex: updating edges for vertex ID 26
-  Updated edge 0x14000123980 from vertex 18 to vertex 26
-  Updated edge 0x14000123780 from vertex 18 to vertex 26
-WARNING: eOrg.Lface is nil in tessMeshSplice, skipping makeFace
+  Updated edge 0x14000135a40 from vertex 26 to vertex 26
 WARNING: regLo is nil in connectLeftVertex
-killVertex: deleting vertex ID 22
-  vPrev ID: 21
+Debug: winding rule 2 checking n=-1: result=false
+Creating new vertex in tessMeshAddEdgeVertex with ID: 27
+makeVertex: creating vertex ID 27 at address 0x1400015f540
+Edge origin before update: 0x1400015f540 (ID: 27 )
+vNext: 0x1400015f400 (ID: 23 )
+makeVertex: setting anEdge for vertex ID 27 to edge 0x14000135ac0
+makeVertex: updating edges for vertex ID 27
+  Updated edge 0x14000135ac0 from vertex 27 to vertex 27
+killVertex: deleting vertex ID 27
+  vPrev ID: 20
   vNext ID: 23
   Updating both vPrev and vNext
-  Updated newOrg(ID: 20 ) anEdge to 0x14000123880
-WARNING: eOrg.Lface is nil in tessMeshSplice, skipping makeFace
-Debug: winding rule 2 checking n=-1: result=false
-Debug: winding rule 2 checking n=-1: result=false
-killVertex: deleting vertex ID 26
-  vPrev ID: 20
-  vNext ID: 18
+  Updated newOrg(ID: 20 ) anEdge to 0x14000135ac0
+WARNING: regLo is nil when accessing eUp and eLo
+Debug: after tessTesselate, vertexCount=0, elementCount=0
+Debug: returning 0 elements and 0 vertices
+--- PASS: TestSingleLine (0.00s)
+=== RUN   TestSingleTriangle
+makeVertex: creating vertex ID 28 at address 0x1400015f5e0
+Edge origin before update: 0x1400015f5e0 (ID: 28 )
+vNext: 0x14000170500 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 28 to edge 0x14000135b00
+makeVertex: updating edges for vertex ID 28
+  Updated edge 0x14000135b00 from vertex 28 to vertex 28
+makeVertex: creating vertex ID 29 at address 0x1400015f630
+Edge origin before update: 0x1400015f630 (ID: 29 )
+vNext: 0x14000170500 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 29 to edge 0x14000135b40
+makeVertex: updating edges for vertex ID 29
+  Updated edge 0x14000135b40 from vertex 29 to vertex 29
+killVertex: deleting vertex ID 29
+  vPrev ID: 28
+  vNext ID: 0
   Updating both vPrev and vNext
-  Updated newOrg(ID: 18 ) anEdge to 0x14000123980
+  Updated newOrg(ID: 28 ) anEdge to 0x14000135b40
+Creating new vertex in tessMeshAddEdgeVertex with ID: 30
+makeVertex: creating vertex ID 30 at address 0x1400015f680
+Edge origin before update: 0x1400015f680 (ID: 30 )
+vNext: 0x1400015f5e0 (ID: 28 )
+makeVertex: setting anEdge for vertex ID 30 to edge 0x14000135bc0
+makeVertex: updating edges for vertex ID 30
+  Updated edge 0x14000135bc0 from vertex 30 to vertex 30
+Creating new vertex in tessMeshAddEdgeVertex with ID: 31
+makeVertex: creating vertex ID 31 at address 0x1400015f6d0
+Edge origin before update: 0x1400015f6d0 (ID: 31 )
+vNext: 0x1400015f5e0 (ID: 28 )
+makeVertex: setting anEdge for vertex ID 31 to edge 0x14000135c40
+makeVertex: updating edges for vertex ID 31
+  Updated edge 0x14000135c40 from vertex 31 to vertex 31
+Debug: processing 1 contours with 3 total vertices
+Debug: vertex 0: (0.00, 0.00)
+Debug: vertex 1: (0.00, 1.00)
+Debug: vertex 2: (1.00, 0.00)
+Debug: mesh is not nil, calling tessTesselate
+Debug: computed signed area: -1.000000
+Debug: reversing orientation due to negative area
+makeVertex: creating vertex ID 32 at address 0x1400015f720
+Edge origin before update: 0x1400015f720 (ID: 32 )
+vNext: 0x14000170500 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 32 to edge 0x14000135cc0
+makeVertex: updating edges for vertex ID 32
+  Updated edge 0x14000135cc0 from vertex 32 to vertex 32
+makeVertex: creating vertex ID 33 at address 0x1400015f770
+Edge origin before update: 0x1400015f770 (ID: 33 )
+vNext: 0x14000170500 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 33 to edge 0x14000135d00
+makeVertex: updating edges for vertex ID 33
+  Updated edge 0x14000135d00 from vertex 33 to vertex 33
+makeVertex: creating vertex ID 34 at address 0x1400015f7c0
+Edge origin before update: 0x1400015f7c0 (ID: 34 )
+vNext: 0x14000170500 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 34 to edge 0x14000135d40
+makeVertex: updating edges for vertex ID 34
+  Updated edge 0x14000135d40 from vertex 34 to vertex 34
+makeVertex: creating vertex ID 35 at address 0x1400015f810
+Edge origin before update: 0x1400015f810 (ID: 35 )
+vNext: 0x14000170500 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 35 to edge 0x14000135d80
+makeVertex: updating edges for vertex ID 35
+  Updated edge 0x14000135d80 from vertex 35 to vertex 35
+WARNING: regLo is nil in connectLeftVertex
+WARNING: regLo is nil in connectLeftVertex
+Debug: winding rule 1 checking n=1: result=true
+Debug: winding rule 1 checking n=0: result=false
+Creating new vertex in tessMeshAddEdgeVertex with ID: 36
+makeVertex: creating vertex ID 36 at address 0x1400015f860
+Edge origin before update: 0x1400015f860 (ID: 36 )
+vNext: 0x1400015f5e0 (ID: 28 )
+makeVertex: setting anEdge for vertex ID 36 to edge 0x14000135e00
+makeVertex: updating edges for vertex ID 36
+  Updated edge 0x14000135e00 from vertex 36 to vertex 36
+killVertex: deleting vertex ID 36
+  vPrev ID: 31
+  vNext ID: 28
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 30 ) anEdge to 0x14000135e00
+Creating new vertex in tessMeshAddEdgeVertex with ID: 37
+makeVertex: creating vertex ID 37 at address 0x1400015f8b0
+Edge origin before update: 0x1400015f8b0 (ID: 37 )
+vNext: 0x1400015f720 (ID: 32 )
+makeVertex: setting anEdge for vertex ID 37 to edge 0x14000135e80
+makeVertex: updating edges for vertex ID 37
+  Updated edge 0x14000135e80 from vertex 37 to vertex 37
+killVertex: deleting vertex ID 37
+  vPrev ID: 28
+  vNext ID: 32
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 30 ) anEdge to 0x14000135e80
+WARNING: regLo is nil when accessing eUp and eLo
+Debug: after tessTesselate, vertexCount=0, elementCount=0
+Debug: returning 0 elements and 0 vertices
+    tess_test.go:217: Expected 3 element indices (1 triangle), got 0
+    tess_test.go:222: Expected 3 vertices, got 0
+--- FAIL: TestSingleTriangle (0.00s)
+=== RUN   TestUnitQuad
+makeVertex: creating vertex ID 38 at address 0x1400015f950
+Edge origin before update: 0x1400015f950 (ID: 38 )
+vNext: 0x14000170700 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 38 to edge 0x14000135ec0
+makeVertex: updating edges for vertex ID 38
+  Updated edge 0x14000135ec0 from vertex 38 to vertex 38
+makeVertex: creating vertex ID 39 at address 0x1400015f9a0
+Edge origin before update: 0x1400015f9a0 (ID: 39 )
+vNext: 0x14000170700 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 39 to edge 0x14000135f00
+makeVertex: updating edges for vertex ID 39
+  Updated edge 0x14000135f00 from vertex 39 to vertex 39
+killVertex: deleting vertex ID 39
+  vPrev ID: 38
+  vNext ID: 0
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 38 ) anEdge to 0x14000135f00
+Creating new vertex in tessMeshAddEdgeVertex with ID: 40
+makeVertex: creating vertex ID 40 at address 0x1400015f9f0
+Edge origin before update: 0x1400015f9f0 (ID: 40 )
+vNext: 0x1400015f950 (ID: 38 )
+makeVertex: setting anEdge for vertex ID 40 to edge 0x14000190000
+makeVertex: updating edges for vertex ID 40
+  Updated edge 0x14000190000 from vertex 40 to vertex 40
+Creating new vertex in tessMeshAddEdgeVertex with ID: 41
+makeVertex: creating vertex ID 41 at address 0x1400015fa40
+Edge origin before update: 0x1400015fa40 (ID: 41 )
+vNext: 0x1400015f950 (ID: 38 )
+makeVertex: setting anEdge for vertex ID 41 to edge 0x14000190080
+makeVertex: updating edges for vertex ID 41
+  Updated edge 0x14000190080 from vertex 41 to vertex 41
+Creating new vertex in tessMeshAddEdgeVertex with ID: 42
+makeVertex: creating vertex ID 42 at address 0x1400015fa90
+Edge origin before update: 0x1400015fa90 (ID: 42 )
+vNext: 0x1400015f950 (ID: 38 )
+makeVertex: setting anEdge for vertex ID 42 to edge 0x14000190100
+makeVertex: updating edges for vertex ID 42
+  Updated edge 0x14000190100 from vertex 42 to vertex 42
+Debug: processing 1 contours with 4 total vertices
+Debug: vertex 0: (0.00, 0.00)
+Debug: vertex 1: (0.00, 1.00)
+Debug: vertex 2: (1.00, 1.00)
+Debug: vertex 3: (1.00, 0.00)
+Debug: mesh is not nil, calling tessTesselate
+Debug: computed signed area: -2.000000
+Debug: reversing orientation due to negative area
+makeVertex: creating vertex ID 43 at address 0x1400015fae0
+Edge origin before update: 0x1400015fae0 (ID: 43 )
+vNext: 0x14000170700 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 43 to edge 0x14000190180
+makeVertex: updating edges for vertex ID 43
+  Updated edge 0x14000190180 from vertex 43 to vertex 43
+makeVertex: creating vertex ID 44 at address 0x1400015fb30
+Edge origin before update: 0x1400015fb30 (ID: 44 )
+vNext: 0x14000170700 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 44 to edge 0x140001901c0
+makeVertex: updating edges for vertex ID 44
+  Updated edge 0x140001901c0 from vertex 44 to vertex 44
+makeVertex: creating vertex ID 45 at address 0x1400015fb80
+Edge origin before update: 0x1400015fb80 (ID: 45 )
+vNext: 0x14000170700 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 45 to edge 0x14000190200
+makeVertex: updating edges for vertex ID 45
+  Updated edge 0x14000190200 from vertex 45 to vertex 45
+makeVertex: creating vertex ID 46 at address 0x1400015fbd0
+Edge origin before update: 0x1400015fbd0 (ID: 46 )
+vNext: 0x14000170700 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 46 to edge 0x14000190240
+makeVertex: updating edges for vertex ID 46
+  Updated edge 0x14000190240 from vertex 46 to vertex 46
+WARNING: regLo is nil in connectLeftVertex
+WARNING: regLo is nil in connectLeftVertex
+WARNING: regLo is nil in connectLeftVertex
+Debug: winding rule 2 checking n=1: result=true
+Debug: winding rule 2 checking n=0: result=false
+Creating new vertex in tessMeshAddEdgeVertex with ID: 47
+makeVertex: creating vertex ID 47 at address 0x1400015fc20
+Edge origin before update: 0x1400015fc20 (ID: 47 )
+vNext: 0x1400015fa40 (ID: 41 )
+makeVertex: setting anEdge for vertex ID 47 to edge 0x140001902c0
+makeVertex: updating edges for vertex ID 47
+  Updated edge 0x140001902c0 from vertex 47 to vertex 47
+killVertex: deleting vertex ID 47
+  vPrev ID: 40
+  vNext ID: 41
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 38 ) anEdge to 0x140001902c0
+Creating new vertex in tessMeshAddEdgeVertex with ID: 48
+makeVertex: creating vertex ID 48 at address 0x1400015fc70
+Edge origin before update: 0x1400015fc70 (ID: 48 )
+vNext: 0x1400015fae0 (ID: 43 )
+makeVertex: setting anEdge for vertex ID 48 to edge 0x14000190340
+makeVertex: updating edges for vertex ID 48
+  Updated edge 0x14000190340 from vertex 48 to vertex 48
+killVertex: deleting vertex ID 48
+  vPrev ID: 38
+  vNext ID: 43
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 38 ) anEdge to 0x14000190340
+WARNING: regLo is nil when accessing eUp and eLo
+Debug: after tessTesselate, vertexCount=0, elementCount=0
+Debug: returning 0 elements and 0 vertices
+    tess_test.go:235: Expected 6 element indices (2 triangles), got 0
+    tess_test.go:240: Expected 4 vertices, got 0
+--- FAIL: TestUnitQuad (0.00s)
+=== RUN   TestInvalidInput
+--- PASS: TestInvalidInput (0.00s)
+=== RUN   TestFloatOverflowQuad
+--- PASS: TestFloatOverflowQuad (0.00s)
+=== RUN   TestSingularityQuad
+makeVertex: creating vertex ID 49 at address 0x1400015fdb0
+Edge origin before update: 0x1400015fdb0 (ID: 49 )
+vNext: 0x14000170800 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 49 to edge 0x14000190380
+makeVertex: updating edges for vertex ID 49
+  Updated edge 0x14000190380 from vertex 49 to vertex 49
+makeVertex: creating vertex ID 50 at address 0x1400015fe00
+Edge origin before update: 0x1400015fe00 (ID: 50 )
+vNext: 0x14000170800 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 50 to edge 0x140001903c0
+makeVertex: updating edges for vertex ID 50
+  Updated edge 0x140001903c0 from vertex 50 to vertex 50
+killVertex: deleting vertex ID 50
+  vPrev ID: 49
+  vNext ID: 0
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 49 ) anEdge to 0x140001903c0
+Creating new vertex in tessMeshAddEdgeVertex with ID: 51
+makeVertex: creating vertex ID 51 at address 0x1400015fe50
+Edge origin before update: 0x1400015fe50 (ID: 51 )
+vNext: 0x1400015fdb0 (ID: 49 )
+makeVertex: setting anEdge for vertex ID 51 to edge 0x14000190440
+makeVertex: updating edges for vertex ID 51
+  Updated edge 0x14000190440 from vertex 51 to vertex 51
+Creating new vertex in tessMeshAddEdgeVertex with ID: 52
+makeVertex: creating vertex ID 52 at address 0x1400015fea0
+Edge origin before update: 0x1400015fea0 (ID: 52 )
+vNext: 0x1400015fdb0 (ID: 49 )
+makeVertex: setting anEdge for vertex ID 52 to edge 0x140001904c0
+makeVertex: updating edges for vertex ID 52
+  Updated edge 0x140001904c0 from vertex 52 to vertex 52
+Creating new vertex in tessMeshAddEdgeVertex with ID: 53
+makeVertex: creating vertex ID 53 at address 0x1400015fef0
+Edge origin before update: 0x1400015fef0 (ID: 53 )
+vNext: 0x1400015fdb0 (ID: 49 )
+makeVertex: setting anEdge for vertex ID 53 to edge 0x14000190540
+makeVertex: updating edges for vertex ID 53
+  Updated edge 0x14000190540 from vertex 53 to vertex 53
+Debug: processing 1 contours with 4 total vertices
+Debug: vertex 0: (0.00, 0.00)
+Debug: vertex 1: (0.00, 0.00)
+Debug: vertex 2: (0.00, 0.00)
+Debug: vertex 3: (0.00, 0.00)
+Debug: mesh is not nil, calling tessTesselate
+Debug: computed signed area: 0.000000
+Debug: keeping original orientation
+killVertex: deleting vertex ID 49
+  vPrev ID: 53
+  vNext ID: 0
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 53 ) anEdge to 0x14000190500
+killVertex: deleting vertex ID 53
+  vPrev ID: 52
+  vNext ID: 0
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 52 ) anEdge to 0x14000190480
+makeVertex: creating vertex ID 54 at address 0x14000194000
+Edge origin before update: 0x14000194000 (ID: 54 )
+vNext: 0x14000170800 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 54 to edge 0x140001905c0
+makeVertex: updating edges for vertex ID 54
+  Updated edge 0x140001905c0 from vertex 54 to vertex 54
+makeVertex: creating vertex ID 55 at address 0x14000194050
+Edge origin before update: 0x14000194050 (ID: 55 )
+vNext: 0x14000170800 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 55 to edge 0x14000190600
+makeVertex: updating edges for vertex ID 55
+  Updated edge 0x14000190600 from vertex 55 to vertex 55
+makeVertex: creating vertex ID 56 at address 0x140001940a0
+Edge origin before update: 0x140001940a0 (ID: 56 )
+vNext: 0x14000170800 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 56 to edge 0x14000190640
+makeVertex: updating edges for vertex ID 56
+  Updated edge 0x14000190640 from vertex 56 to vertex 56
+makeVertex: creating vertex ID 57 at address 0x140001940f0
+Edge origin before update: 0x140001940f0 (ID: 57 )
+vNext: 0x14000170800 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 57 to edge 0x14000190680
+makeVertex: updating edges for vertex ID 57
+  Updated edge 0x14000190680 from vertex 57 to vertex 57
+killVertex: deleting vertex ID 51
+  vPrev ID: 0
+  vNext ID: 52
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 52 ) anEdge to 0x14000190440
 WARNING: eOrg.Lface is nil in tessMeshSplice, skipping makeFace
---- FAIL: TestSingleLine (0.00s)
-panic: runtime error: invalid memory address or nil pointer dereference [recovered]
-	panic: runtime error: invalid memory address or nil pointer dereference
-[signal SIGSEGV: segmentation violation code=0x2 addr=0x0 pc=0x100259d38]
-
-goroutine 46 [running]:
-testing.tRunner.func1.2({0x1002c53e0, 0x1003d5c10})
-	/usr/local/go/src/testing/testing.go:1734 +0x1ac
-testing.tRunner.func1()
-	/usr/local/go/src/testing/testing.go:1737 +0x334
-panic({0x1002c53e0?, 0x1003d5c10?})
-	/usr/local/go/src/runtime/panic.go:792 +0x124
-github.com/flywave/go-tesselator.tessMeshDelete(0x1400015e400, 0x140001237c0)
-	/Users/xuning/Work/go-tesselator/mesh.go:608 +0x58
-github.com/flywave/go-tesselator.addRightEdges(0x14000124c30, 0x140001166e0, 0x14000123880?, 0x14000123880, 0x14000123880, 0x1)
-	/Users/xuning/Work/go-tesselator/sweep.go:389 +0x340
-github.com/flywave/go-tesselator.connectLeftDegenerate(0x14000124c30, 0x1400016dc20?, 0x1400014d310)
-	/Users/xuning/Work/go-tesselator/sweep.go:986 +0x350
-github.com/flywave/go-tesselator.connectLeftVertex(0x14000124c30, 0x1400014d310)
-	/Users/xuning/Work/go-tesselator/sweep.go:1030 +0x274
-github.com/flywave/go-tesselator.sweepEvent(0x1002eec40?, 0x14000123800?)
-	/Users/xuning/Work/go-tesselator/sweep.go:1097 +0x5c
-github.com/flywave/go-tesselator.tessComputeInterior(0x14000124c30)
-	/Users/xuning/Work/go-tesselator/sweep.go:1339 +0x48
-github.com/flywave/go-tesselator.tessTesselate(0x14000124c30, 0x1400010c038?, 0x0, 0x3, 0x1?, {0x0?, 0x3?, 0x1003e0580?})
-	/Users/xuning/Work/go-tesselator/tess.go:875 +0xb0
-github.com/flywave/go-tesselator.Tesselate({0x14000109f30, 0x1, 0x13f2e130b?}, 0x2)
-	/Users/xuning/Work/go-tesselator/tess.go:203 +0x314
-github.com/flywave/go-tesselator.TestSingleLine(0x14000129c00)
-	/Users/xuning/Work/go-tesselator/tess_test.go:196 +0x170
-testing.tRunner(0x14000129c00, 0x1002ec788)
-	/usr/local/go/src/testing/testing.go:1792 +0xe4
-created by testing.(*T).Run in goroutine 1
-	/usr/local/go/src/testing/testing.go:1851 +0x374
-exit status 2
-FAIL	github.com/flywave/go-tesselator	0.429s
+WARNING: regLo is nil in connectLeftVertex
+Debug: after tessTesselate, vertexCount=0, elementCount=0
+Debug: returning 0 elements and 0 vertices
+--- PASS: TestSingularityQuad (0.00s)
+=== RUN   TestDegenerateQuad
+--- PASS: TestDegenerateQuad (0.00s)
+=== RUN   TestWidthOverflowsTri
+--- PASS: TestWidthOverflowsTri (0.00s)
+=== RUN   TestHeightOverflowsTri
+--- PASS: TestHeightOverflowsTri (0.00s)
+=== RUN   TestAreaOverflowsTri
+--- PASS: TestAreaOverflowsTri (0.00s)
+=== RUN   TestNanQuad
+--- PASS: TestNanQuad (0.00s)
+=== RUN   TestTriangles
+makeVertex: creating vertex ID 58 at address 0x14000194320
+Edge origin before update: 0x14000194320 (ID: 58 )
+vNext: 0x14000170900 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 58 to edge 0x140001906c0
+makeVertex: updating edges for vertex ID 58
+  Updated edge 0x140001906c0 from vertex 58 to vertex 58
+makeVertex: creating vertex ID 59 at address 0x14000194370
+Edge origin before update: 0x14000194370 (ID: 59 )
+vNext: 0x14000170900 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 59 to edge 0x14000190700
+makeVertex: updating edges for vertex ID 59
+  Updated edge 0x14000190700 from vertex 59 to vertex 59
+killVertex: deleting vertex ID 59
+  vPrev ID: 58
+  vNext ID: 0
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 58 ) anEdge to 0x14000190700
+Creating new vertex in tessMeshAddEdgeVertex with ID: 60
+makeVertex: creating vertex ID 60 at address 0x140001943c0
+Edge origin before update: 0x140001943c0 (ID: 60 )
+vNext: 0x14000194320 (ID: 58 )
+makeVertex: setting anEdge for vertex ID 60 to edge 0x14000190780
+makeVertex: updating edges for vertex ID 60
+  Updated edge 0x14000190780 from vertex 60 to vertex 60
+Creating new vertex in tessMeshAddEdgeVertex with ID: 61
+makeVertex: creating vertex ID 61 at address 0x14000194410
+Edge origin before update: 0x14000194410 (ID: 61 )
+vNext: 0x14000194320 (ID: 58 )
+makeVertex: setting anEdge for vertex ID 61 to edge 0x14000190800
+makeVertex: updating edges for vertex ID 61
+  Updated edge 0x14000190800 from vertex 61 to vertex 61
+Creating new vertex in tessMeshAddEdgeVertex with ID: 62
+makeVertex: creating vertex ID 62 at address 0x14000194460
+Edge origin before update: 0x14000194460 (ID: 62 )
+vNext: 0x14000194320 (ID: 58 )
+makeVertex: setting anEdge for vertex ID 62 to edge 0x14000190880
+makeVertex: updating edges for vertex ID 62
+  Updated edge 0x14000190880 from vertex 62 to vertex 62
+Creating new vertex in tessMeshAddEdgeVertex with ID: 63
+makeVertex: creating vertex ID 63 at address 0x140001944b0
+Edge origin before update: 0x140001944b0 (ID: 63 )
+vNext: 0x14000194320 (ID: 58 )
+makeVertex: setting anEdge for vertex ID 63 to edge 0x14000190900
+makeVertex: updating edges for vertex ID 63
+  Updated edge 0x14000190900 from vertex 63 to vertex 63
+Debug: processing 1 contours with 5 total vertices
+Debug: vertex 0: (0.00, 3.00)
+Debug: vertex 1: (-1.00, 0.00)
+Debug: vertex 2: (1.60, 1.90)
+Debug: vertex 3: (-1.60, 1.90)
+Debug: vertex 4: (1.00, 0.00)
+Debug: mesh is not nil, calling tessTesselate
+Debug: computed signed area: 8.280001
+Debug: keeping original orientation
+makeVertex: creating vertex ID 64 at address 0x14000194500
+Edge origin before update: 0x14000194500 (ID: 64 )
+vNext: 0x14000170900 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 64 to edge 0x140001909c0
+makeVertex: updating edges for vertex ID 64
+  Updated edge 0x140001909c0 from vertex 64 to vertex 64
+makeVertex: creating vertex ID 65 at address 0x14000194550
+Edge origin before update: 0x14000194550 (ID: 65 )
+vNext: 0x14000170900 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 65 to edge 0x14000190a00
+makeVertex: updating edges for vertex ID 65
+  Updated edge 0x14000190a00 from vertex 65 to vertex 65
+makeVertex: creating vertex ID 66 at address 0x140001945a0
+Edge origin before update: 0x140001945a0 (ID: 66 )
+vNext: 0x14000170900 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 66 to edge 0x14000190a40
+makeVertex: updating edges for vertex ID 66
+  Updated edge 0x14000190a40 from vertex 66 to vertex 66
+makeVertex: creating vertex ID 67 at address 0x140001945f0
+Edge origin before update: 0x140001945f0 (ID: 67 )
+vNext: 0x14000170900 (ID: 0 )
+makeVertex: setting anEdge for vertex ID 67 to edge 0x14000190a80
+makeVertex: updating edges for vertex ID 67
+  Updated edge 0x14000190a80 from vertex 67 to vertex 67
+WARNING: regUp is nil in connectLeftVertex
+WARNING: regLo is nil in connectLeftVertex
+WARNING: regUp is nil in connectLeftVertex
+Debug: winding rule 0 checking n=1: result=true
+Debug: winding rule 0 checking n=0: result=false
+Creating new vertex in tessMeshAddEdgeVertex with ID: 68
+makeVertex: creating vertex ID 68 at address 0x14000194640
+Edge origin before update: 0x14000194640 (ID: 68 )
+vNext: 0x14000194320 (ID: 58 )
+makeVertex: setting anEdge for vertex ID 68 to edge 0x14000190b00
+makeVertex: updating edges for vertex ID 68
+  Updated edge 0x14000190b00 from vertex 68 to vertex 68
+killVertex: deleting vertex ID 68
+  vPrev ID: 63
+  vNext ID: 58
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 62 ) anEdge to 0x14000190b00
+Creating new vertex in tessMeshAddEdgeVertex with ID: 69
+makeVertex: creating vertex ID 69 at address 0x14000194690
+Edge origin before update: 0x14000194690 (ID: 69 )
+vNext: 0x140001945a0 (ID: 66 )
+makeVertex: setting anEdge for vertex ID 69 to edge 0x14000190b80
+makeVertex: updating edges for vertex ID 69
+  Updated edge 0x14000190b80 from vertex 69 to vertex 69
+killVertex: deleting vertex ID 69
+  vPrev ID: 65
+  vNext ID: 66
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 62 ) anEdge to 0x14000190b80
+Creating new vertex in tessMeshAddEdgeVertex with ID: 70
+makeVertex: creating vertex ID 70 at address 0x140001946e0
+Edge origin before update: 0x140001946e0 (ID: 70 )
+vNext: 0x140001945f0 (ID: 67 )
+makeVertex: setting anEdge for vertex ID 70 to edge 0x14000190c00
+makeVertex: updating edges for vertex ID 70
+  Updated edge 0x14000190c00 from vertex 70 to vertex 70
+killVertex: deleting vertex ID 70
+  vPrev ID: 66
+  vNext ID: 67
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 63 ) anEdge to 0x14000190c00
+WARNING: eUp or its Sym/Org is nil in walkDirtyRegions
+  eUp is nil
+killVertex: deleting vertex ID 63
+  vPrev ID: 62
+  vNext ID: 58
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 61 ) anEdge to 0x14000190c00
+Debug: winding rule 0 checking n=-1: result=true
+Debug: winding rule 0 checking n=0: result=false
+Creating new vertex in tessMeshAddEdgeVertex with ID: 71
+makeVertex: creating vertex ID 71 at address 0x14000194730
+Edge origin before update: 0x14000194730 (ID: 71 )
+vNext: 0x140001943c0 (ID: 60 )
+makeVertex: setting anEdge for vertex ID 71 to edge 0x14000190c80
+makeVertex: updating edges for vertex ID 71
+  Updated edge 0x14000190c80 from vertex 71 to vertex 71
+killVertex: deleting vertex ID 71
+  vPrev ID: 0
+  vNext ID: 60
+  Updating both vPrev and vNext
+  Updated newOrg(ID: 62 ) anEdge to 0x14000190c80
+Debug: winding rule 0 checking n=0: result=false
+WARNING: eUp or its Sym/Org is nil in walkDirtyRegions
+  eUp is nil
+Debug: after tessTesselate, vertexCount=0, elementCount=0
+Debug: returning 0 elements and 0 vertices
+--- PASS: TestTriangles (0.00s)
+FAIL
+exit status 1
+FAIL	github.com/flywave/go-tesselator	0.343s
