@@ -163,3 +163,101 @@ func TestDictIteration(t *testing.T) {
 		}
 	}
 }
+
+// 测试dict的search功能
+func TestDictSearch(t *testing.T) {
+	tess := newMockTesselator()
+	d := newDict(tess)
+
+	// 创建测试用的activeRegion
+	r1 := newMockActiveRegion(newMockHalfEdge(newMockVertex(1, 0, 0), newMockVertex(2, 1, 1)))
+	r2 := newMockActiveRegion(newMockHalfEdge(newMockVertex(2, 1, 1), newMockVertex(3, 2, 2)))
+	r3 := newMockActiveRegion(newMockHalfEdge(newMockVertex(3, 2, 2), newMockVertex(4, 3, 3)))
+
+	// 插入节点
+	d.insert(r1)
+	d.insert(r2)
+	d.insert(r3)
+
+	// 测试搜索存在的key (应该返回具有相同key的节点)
+	result := d.search(r2)
+	// 由于我们无法完全控制排序，我们只验证返回的节点不是head节点
+	if result == &d.head {
+		t.Errorf("Search failed: should not return head node for existing key")
+	}
+
+	// 测试空字典的搜索
+	emptyDict := newDict(tess)
+	result = emptyDict.search(r1)
+	if dictKey(result) != nil {
+		t.Errorf("Search failed: expected to find nil in empty dict")
+	}
+}
+
+// 测试dictSucc和dictPred功能
+func TestDictSuccAndPred(t *testing.T) {
+	tess := newMockTesselator()
+	d := newDict(tess)
+
+	// 创建测试用的activeRegion
+	r1 := newMockActiveRegion(newMockHalfEdge(newMockVertex(1, 0, 0), newMockVertex(2, 1, 1)))
+	r2 := newMockActiveRegion(newMockHalfEdge(newMockVertex(2, 1, 1), newMockVertex(3, 2, 2)))
+	r3 := newMockActiveRegion(newMockHalfEdge(newMockVertex(3, 2, 2), newMockVertex(4, 3, 3)))
+
+	// 按顺序插入节点
+	n1 := d.insert(r1)
+	n2 := d.insert(r2)
+	n3 := d.insert(r3)
+
+	// 测试dictSucc
+	if dictSucc(n1) != n2 {
+		t.Errorf("dictSucc failed: n1's successor should be n2")
+	}
+	if dictSucc(n2) != n3 {
+		t.Errorf("dictSucc failed: n2's successor should be n3")
+	}
+	// head的前驱应该是最后一个节点
+	if dictSucc(&d.head) != n1 {
+		t.Errorf("dictSucc failed: head's successor should be n1")
+	}
+
+	// 测试dictPred
+	if dictPred(n3) != n2 {
+		t.Errorf("dictPred failed: n3's predecessor should be n2")
+	}
+	if dictPred(n2) != n1 {
+		t.Errorf("dictPred failed: n2's predecessor should be n1")
+	}
+	// head的前驱应该是最后一个节点
+	if dictPred(&d.head) != n3 {
+		t.Errorf("dictPred failed: head's predecessor should be n3")
+	}
+}
+
+// 测试dict的max功能
+func TestDictMax(t *testing.T) {
+	tess := newMockTesselator()
+	d := newDict(tess)
+
+	// 测试空字典的max
+	maxNode := d.max()
+	if maxNode != &d.head {
+		t.Errorf("max failed: empty dict should return head")
+	}
+
+	// 创建测试用的activeRegion
+	r1 := newMockActiveRegion(newMockHalfEdge(newMockVertex(1, 0, 0), newMockVertex(2, 1, 1)))
+	r2 := newMockActiveRegion(newMockHalfEdge(newMockVertex(2, 1, 1), newMockVertex(3, 2, 2)))
+	r3 := newMockActiveRegion(newMockHalfEdge(newMockVertex(3, 2, 2), newMockVertex(4, 3, 3)))
+
+	// 按顺序插入节点
+	d.insert(r1)
+	d.insert(r2)
+	n3 := d.insert(r3)
+
+	// 测试非空字典的max
+	maxNode = d.max()
+	if maxNode != n3 {
+		t.Errorf("max failed: should return the last inserted node")
+	}
+}

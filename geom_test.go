@@ -339,3 +339,260 @@ func TestInCircle(t *testing.T) {
 		t.Errorf("Expected inCircle(%v, %v, %v, %v) < 0, got %v", vOutside2, v0, v1, v2, result)
 	}
 }
+
+// TestTransEval 测试transEval函数
+func TestTransEval(t *testing.T) {
+	// 创建测试点，确保它们满足transLeq顺序 (按t坐标排序)
+	u := &vertex{s: 0.0, t: 0.0}
+	v := &vertex{s: 1.0, t: 1.0}
+	w := &vertex{s: 2.0, t: 2.0}
+
+	// 确保点按t坐标排序
+	if !(transLeq(u, v) && transLeq(v, w)) {
+		t.Fatal("Points not in order for transEval")
+	}
+
+	// 测试点在边上
+	result := transEval(u, v, w)
+	expected := float(0.0)
+	if math.Abs(float64(result)-float64(expected)) > 1e-6 {
+		t.Errorf("Expected transEval(%v, %v, %v) = %v, got %v", u, v, w, expected, result)
+	}
+
+	// 测试点不在边上
+	v2 := &vertex{s: 0.0, t: 1.0}
+	// 确保点按t坐标排序
+	if !(transLeq(u, v2) && transLeq(v2, w)) {
+		t.Fatal("Points not in order for transEval")
+	}
+	result = transEval(u, v2, w)
+	// 根据transEval实现计算预期值
+	gapL := v2.t - u.t
+	gapR := w.t - v2.t
+	if gapL+gapR > 0 {
+		if gapL < gapR {
+			expected = float(v2.s-u.s) + float(u.s-w.s)*float(gapL)/float(gapL+gapR)
+		} else {
+			expected = float(v2.s-w.s) + float(w.s-u.s)*float(gapR)/float(gapL+gapR)
+		}
+	} else {
+		expected = 0
+	}
+	if math.Abs(float64(result)-float64(expected)) > 1e-6 {
+		t.Errorf("Expected transEval(%v, %v, %v) = %v, got %v", u, v2, w, expected, result)
+	}
+}
+
+// TestTransSign 测试transSign函数
+func TestTransSign(t *testing.T) {
+	// 创建测试点，确保它们满足transLeq顺序 (按t坐标排序)
+	u := &vertex{s: 0.0, t: 0.0}
+	v := &vertex{s: 1.0, t: 1.0}
+	w := &vertex{s: 2.0, t: 2.0}
+
+	// 确保点按t坐标排序
+	if !(transLeq(u, v) && transLeq(v, w)) {
+		t.Fatal("Points not in order for transSign")
+	}
+
+	// 测试点在边上
+	result := transSign(u, v, w)
+	expected := float(0.0)
+	if math.Abs(float64(result)-float64(expected)) > 1e-6 {
+		t.Errorf("Expected transSign(%v, %v, %v) = %v, got %v", u, v, w, expected, result)
+	}
+
+	// 测试点在边上侧
+	v2 := &vertex{s: 2.0, t: 1.0}
+	// 确保点按t坐标排序
+	if !(transLeq(u, v2) && transLeq(v2, w)) {
+		t.Fatal("Points not in order for transSign")
+	}
+	result = transSign(u, v2, w)
+	if result <= 0 {
+		t.Errorf("Expected transSign(%v, %v, %v) > 0, got %v", u, v2, w, result)
+	}
+
+	// 测试点在边下侧
+	v3 := &vertex{s: 0.0, t: 1.0}
+	// 确保点按t坐标排序
+	if !(transLeq(u, v3) && transLeq(v3, w)) {
+		t.Fatal("Points not in order for transSign")
+	}
+	result = transSign(u, v3, w)
+	if result >= 0 {
+		t.Errorf("Expected transSign(%v, %v, %v) < 0, got %v", u, v3, w, result)
+	}
+}
+
+// TestEdgeGoesLeft 测试edgeGoesLeft函数
+func TestEdgeGoesLeft(t *testing.T) {
+	// 创建边，Dst的s坐标小于Org的s坐标 (边向左走)
+	org := &vertex{s: 1.0, t: 1.0}
+	dst := &vertex{s: 0.0, t: 0.0}
+	e := &halfEdge{
+		Org: org,
+		Sym: &halfEdge{
+			Org: dst,
+		},
+	}
+
+	// 设置对称边的dst
+	e.Sym.Sym = e
+
+	// 边应该向左走 (dst.s <= org.s)
+	if !edgeGoesLeft(e) {
+		t.Errorf("Expected edgeGoesLeft(%v -> %v) to be true", org, dst)
+	}
+
+	// 创建边，Dst的s坐标大于Org的s坐标 (边向右走)
+	org2 := &vertex{s: 0.0, t: 0.0}
+	dst2 := &vertex{s: 1.0, t: 1.0}
+	e2 := &halfEdge{
+		Org: org2,
+		Sym: &halfEdge{
+			Org: dst2,
+		},
+	}
+
+	// 设置对称边的dst
+	e2.Sym.Sym = e2
+
+	// 边不应该向左走 (dst.s > org.s)
+	if edgeGoesLeft(e2) {
+		t.Errorf("Expected edgeGoesLeft(%v -> %v) to be false", org2, dst2)
+	}
+}
+
+// TestEdgeGoesRight 测试edgeGoesRight函数
+func TestEdgeGoesRight(t *testing.T) {
+	// 创建边，Org的s坐标小于Dst的s坐标
+	org := &vertex{s: 0.0, t: 0.0}
+	dst := &vertex{s: 1.0, t: 1.0}
+	e := &halfEdge{
+		Org: org,
+		Sym: &halfEdge{
+			Org: dst,
+		},
+	}
+
+	// 设置对称边的dst
+	e.Sym.Sym = e
+
+	// 边应该向右走 (org.s <= dst.s)
+	if !edgeGoesRight(e) {
+		t.Errorf("Expected edgeGoesRight(%v -> %v) to be true", org, dst)
+	}
+
+	// 创建边，Org的s坐标大于Dst的s坐标
+	org2 := &vertex{s: 1.0, t: 1.0}
+	dst2 := &vertex{s: 0.0, t: 0.0}
+	e2 := &halfEdge{
+		Org: org2,
+		Sym: &halfEdge{
+			Org: dst2,
+		},
+	}
+
+	// 设置对称边的dst
+	e2.Sym.Sym = e2
+
+	// 边不应该向右走 (org.s > dst.s)
+	if edgeGoesRight(e2) {
+		t.Errorf("Expected edgeGoesRight(%v -> %v) to be false", org2, dst2)
+	}
+}
+
+// TestVertL1dist 测试vertL1dist函数
+func TestVertL1dist(t *testing.T) {
+	// 测试两个相同点
+	u := &vertex{s: 1.0, t: 2.0}
+	v := &vertex{s: 1.0, t: 2.0}
+	result := vertL1dist(u, v)
+	expected := float(0.0)
+	if result != expected {
+		t.Errorf("Expected vertL1dist(%v, %v) = %v, got %v", u, v, expected, result)
+	}
+
+	// 测试两个不同点
+	u2 := &vertex{s: 0.0, t: 0.0}
+	v2 := &vertex{s: 3.0, t: 4.0}
+	result = vertL1dist(u2, v2)
+	expected = float(7.0) // |3-0| + |4-0| = 3 + 4 = 7
+	if result != expected {
+		t.Errorf("Expected vertL1dist(%v, %v) = %v, got %v", u2, v2, expected, result)
+	}
+
+	// 测试负坐标
+	u3 := &vertex{s: -1.0, t: -2.0}
+	v3 := &vertex{s: 2.0, t: 3.0}
+	result = vertL1dist(u3, v3)
+	expected = float(8.0) // |2-(-1)| + |3-(-2)| = 3 + 5 = 8
+	if result != expected {
+		t.Errorf("Expected vertL1dist(%v, %v) = %v, got %v", u3, v3, expected, result)
+	}
+}
+
+// TestVertEq 测试vertEq函数
+func TestVertEq(t *testing.T) {
+	// 测试两个相同点
+	u := &vertex{s: 1.0, t: 2.0}
+	v := &vertex{s: 1.0, t: 2.0}
+	if !vertEq(u, v) {
+		t.Errorf("Expected vertEq(%v, %v) to be true", u, v)
+	}
+
+	// 测试s坐标不同
+	u2 := &vertex{s: 1.0, t: 2.0}
+	v2 := &vertex{s: 2.0, t: 2.0}
+	if vertEq(u2, v2) {
+		t.Errorf("Expected vertEq(%v, %v) to be false", u2, v2)
+	}
+
+	// 测试t坐标不同
+	u3 := &vertex{s: 1.0, t: 2.0}
+	v3 := &vertex{s: 1.0, t: 3.0}
+	if vertEq(u3, v3) {
+		t.Errorf("Expected vertEq(%v, %v) to be false", u3, v3)
+	}
+
+	// 测试两个坐标都不同
+	u4 := &vertex{s: 1.0, t: 2.0}
+	v4 := &vertex{s: 3.0, t: 4.0}
+	if vertEq(u4, v4) {
+		t.Errorf("Expected vertEq(%v, %v) to be false", u4, v4)
+	}
+}
+
+// TestTransLeq 测试transLeq函数
+func TestTransLeq(t *testing.T) {
+	// 测试t坐标相同，s坐标不同
+	u := &vertex{s: 1.0, t: 2.0}
+	v := &vertex{s: 2.0, t: 2.0}
+	if !transLeq(u, v) {
+		t.Errorf("Expected transLeq(%v, %v) to be true", u, v)
+	}
+	if transLeq(v, u) {
+		t.Errorf("Expected transLeq(%v, %v) to be false", v, u)
+	}
+
+	// 测试t坐标不同
+	u2 := &vertex{s: 1.0, t: 1.0}
+	v2 := &vertex{s: 2.0, t: 2.0}
+	if !transLeq(u2, v2) {
+		t.Errorf("Expected transLeq(%v, %v) to be true", u2, v2)
+	}
+	if transLeq(v2, u2) {
+		t.Errorf("Expected transLeq(%v, %v) to be false", v2, u2)
+	}
+
+	// 测试两个点相同
+	u3 := &vertex{s: 1.0, t: 2.0}
+	v3 := &vertex{s: 1.0, t: 2.0}
+	if !transLeq(u3, v3) {
+		t.Errorf("Expected transLeq(%v, %v) to be true", u3, v3)
+	}
+	if !transLeq(v3, u3) {
+		t.Errorf("Expected transLeq(%v, %v) to be true", v3, u3)
+	}
+}

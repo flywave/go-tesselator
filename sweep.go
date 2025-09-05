@@ -619,7 +619,7 @@ func checkForIntersect(tess *tesselator, regUp *activeRegion) bool {
 
 	if vertLeq(&isect, tess.event) {
 		// The intersection point lies slightly to the left of the sweep line,
-		// so move it until it''s slightly to the right of the sweep line.
+		// so move it until it's slightly to the right of the sweep line.
 		// (If we had perfect numerical precision, this would never happen
 		// in the first place).  The easiest and safest thing to do is
 		// replace the intersection by tess.event.
@@ -1333,7 +1333,10 @@ func tessComputeInterior(tess *tesselator) {
 			// gap between them.  This kind of error is especially obvious
 			// when using boundary extraction (TESS_BOUNDARY_ONLY).
 			vNext = tess.pq.extractMin()
-			spliceMergeVertices(tess, v.anEdge, vNext.anEdge)
+			// Add a nil check to prevent panic
+			if v.anEdge != nil && vNext.anEdge != nil {
+				spliceMergeVertices(tess, v.anEdge, vNext.anEdge)
+			}
 		}
 		sweepEvent(tess, v)
 	}

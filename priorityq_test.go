@@ -143,4 +143,137 @@ func TestPriorityQ(t *testing.T) {
 			t.Errorf("Expected minimum vertex %v, got %v", v5, min)
 		}
 	})
+
+	// 测试6: 自由列表功能
+	t.Run("FreeListFunctionality", func(t *testing.T) {
+		pq := newPriorityQ()
+
+		// 插入一些元素
+		pq.insert(v1)
+		pq.insert(v2)
+		pq.insert(v3)
+
+		// 检查自由列表为空
+		if len(pq.freeList) != 0 {
+			t.Errorf("Expected freeList to be empty, got %d elements", len(pq.freeList))
+		}
+
+		// 删除一个元素，这应该会向自由列表添加一个索引
+		pq.delete(v2)
+
+		// 检查自由列表不为空
+		if len(pq.freeList) == 0 {
+			t.Error("Expected freeList to contain elements after deletion")
+		}
+
+		// 插入新元素，应该重用自由列表中的槽位
+		pq.insert(v4)
+
+		// 验证队列状态
+		vertices := make([]*vertex, 0, 2)
+		for !pq.isEmpty() {
+			vertices = append(vertices, pq.extractMin())
+		}
+
+		// 验证我们得到了正确的元素数量
+		if len(vertices) != 2 {
+			t.Errorf("Expected 2 vertices, got %d", len(vertices))
+		}
+	})
+
+	// 测试7: 索引映射功能
+	t.Run("IndexMapFunctionality", func(t *testing.T) {
+		pq := newPriorityQ()
+
+		// 插入元素
+		pq.insert(v1)
+		pq.insert(v2)
+		pq.insert(v3)
+
+		// 验证索引映射存在
+		if _, exists := pq.index[v1]; !exists {
+			t.Error("Expected v1 to be in index map")
+		}
+		if _, exists := pq.index[v2]; !exists {
+			t.Error("Expected v2 to be in index map")
+		}
+		if _, exists := pq.index[v3]; !exists {
+			t.Error("Expected v3 to be in index map")
+		}
+
+		// 删除元素后，验证索引映射被移除
+		pq.delete(v2)
+		if _, exists := pq.index[v2]; exists {
+			t.Error("Expected v2 to be removed from index map")
+		}
+
+		// 其他元素应该仍然在索引映射中
+		if _, exists := pq.index[v1]; !exists {
+			t.Error("Expected v1 to still be in index map")
+		}
+		if _, exists := pq.index[v3]; !exists {
+			t.Error("Expected v3 to still be in index map")
+		}
+	})
+
+	// 测试8: 批量插入功能
+	t.Run("BatchInsertFunctionality", func(t *testing.T) {
+		pq := newPriorityQ()
+
+		// 批量插入
+		vertices := []*vertex{v1, v2, v3, v4, v5}
+		pq.batchInsert(vertices)
+
+		// 验证所有元素都被插入
+		expectedOrder := []*vertex{v5, v3, v1, v4, v2}
+		for i := 0; i < len(expectedOrder); i++ {
+			min := pq.extractMin()
+			if min != expectedOrder[i] {
+				t.Errorf("Expected vertex %v at position %d, got %v", expectedOrder[i], i, min)
+			}
+		}
+	})
+
+	// 测试9: 空队列操作
+	t.Run("EmptyQueueOperations", func(t *testing.T) {
+		pq := newPriorityQ()
+
+		// 在空队列上操作
+		if min := pq.extractMin(); min != nil {
+			t.Errorf("Expected nil from extractMin on empty queue, got %v", min)
+		}
+
+		if min := pq.minimum(); min != nil {
+			t.Errorf("Expected nil from minimum on empty queue, got %v", min)
+		}
+
+		if !pq.isEmpty() {
+			t.Error("Expected empty queue to return true for isEmpty")
+		}
+
+		// 删除不存在的元素应该不会出错
+		pq.delete(v1)
+	})
+
+	// 测试10: 重复元素插入
+	t.Run("DuplicateElementInsertion", func(t *testing.T) {
+		pq := newPriorityQ()
+
+		// 插入相同元素多次
+		pq.insert(v1)
+		pq.insert(v1) // 插入相同元素
+
+		// 应该有两个v1在队列中
+		min1 := pq.extractMin()
+		min2 := pq.extractMin()
+
+		if min1 != v1 || min2 != v1 {
+			t.Error("Expected both elements to be v1")
+		}
+
+		// 队列应该为空
+		if !pq.isEmpty() {
+			t.Error("Expected queue to be empty after extracting all elements")
+		}
+	})
 }
