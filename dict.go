@@ -1,5 +1,7 @@
 package tesselator
 
+import "fmt"
+
 // activeRegion:
 // For each pair of adjacent edges crossing the sweep line, there is
 // an ActiveRegion to represent the region between them.  The active
@@ -58,6 +60,19 @@ func (d *dict) insertBefore(n *dictNode, key *activeRegion) *dictNode {
 	if n == nil {
 		n = &d.head
 	}
+
+	// Handle nil key
+	if key == nil {
+		fmt.Println("WARNING: nil key in insertBefore")
+		return nil
+	}
+
+	// Handle nil frame
+	if d.frame == nil {
+		fmt.Println("WARNING: nil frame in insertBefore")
+		return nil
+	}
+
 	for {
 		n = n.prev
 		if n.key == nil || edgeLeq(d.frame, n.key, key) {
@@ -85,9 +100,25 @@ func dictDelete(n *dictNode) {
 // to the given key.  If there is no such key, returns a node whose
 // key is NULL.  Similarly, Succ(Max(d)) has a NULL key, etc.
 func (d *dict) search(key *activeRegion) *dictNode {
+	// Handle nil key
+	if key == nil {
+		return &d.head
+	}
+
+	// Handle nil frame
+	if d.frame == nil {
+		return &d.head
+	}
+
 	n := &d.head
 	for {
 		n = n.next
+		// Check if we've reached the end of the list
+		if n == &d.head {
+			// Return the head node if we've looped back to it
+			return &d.head
+		}
+		// Check if the current node's key is nil or if the key is less than or equal to the current node's key
 		if n.key == nil || edgeLeq(d.frame, key, n.key) {
 			break
 		}

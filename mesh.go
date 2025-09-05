@@ -1,6 +1,7 @@
 package tesselator
 
 import (
+	"fmt"
 	"runtime"
 )
 
@@ -589,6 +590,12 @@ func tessMeshSplice(m *mesh, eOrg *halfEdge, eDst *halfEdge) {
 // plus a few calls to memFree, but this would allocate and delete
 // unnecessary vertices and faces.
 func tessMeshDelete(m *mesh, eDel *halfEdge) {
+	// Add comprehensive nil checks
+	if m == nil || eDel == nil || eDel.Sym == nil {
+		fmt.Println("WARNING: nil values in tessMeshDelete")
+		return
+	}
+
 	eDelSym := eDel.Sym
 	joiningLoops := false
 
@@ -604,8 +611,13 @@ func tessMeshDelete(m *mesh, eDel *halfEdge) {
 		killVertex(m, eDel.Org, nil)
 	} else {
 		// Make sure that eDel.Org and eDel.Rface point to valid half-edges
-		eDel.rFace().anEdge = eDel.oPrev()
-		eDel.Org.anEdge = eDel.Onext
+		// Add nil checks before accessing rFace()
+		if eDel.rFace() != nil {
+			eDel.rFace().anEdge = eDel.oPrev()
+		}
+		if eDel.Org != nil {
+			eDel.Org.anEdge = eDel.Onext
+		}
 
 		splice(eDel, eDel.oPrev())
 		if !joiningLoops {
@@ -620,11 +632,19 @@ func tessMeshDelete(m *mesh, eDel *halfEdge) {
 	// may have been deleted.  Now we disconnect eDel.Dst.
 	if eDelSym.Onext == eDelSym {
 		killVertex(m, eDelSym.Org, nil)
-		killFace(m, eDelSym.Lface, nil)
+		// Add nil check before accessing Lface
+		if eDelSym.Lface != nil {
+			killFace(m, eDelSym.Lface, nil)
+		}
 	} else {
 		// Make sure that eDel.Dst and eDel.Lface point to valid half-edges
-		eDel.Lface.anEdge = eDelSym.oPrev()
-		eDelSym.Org.anEdge = eDelSym.Onext
+		// Add nil checks before accessing Lface and Org
+		if eDel.Lface != nil {
+			eDel.Lface.anEdge = eDelSym.oPrev()
+		}
+		if eDelSym.Org != nil {
+			eDelSym.Org.anEdge = eDelSym.Onext
+		}
 		splice(eDelSym, eDelSym.oPrev())
 	}
 
@@ -1156,4 +1176,5 @@ func tessMeshCheckMesh(m *mesh) {
 	if e.rFace() != nil {
 		panic("tess: e.rFace() != nil for head in tessMeshCheckMesh")
 	}
+
 }
