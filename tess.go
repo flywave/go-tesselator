@@ -378,29 +378,27 @@ func checkOrientation(tess *tesselator) {
 		if e.winding <= 0 {
 			continue
 		}
+
+		// Use proper do-while loop semantics
+		// In a do-while loop, the body is executed at least once before checking the condition
+		startEdge := e
 		for {
 			area += (e.Org.s - e.dst().s) * (e.Org.t + e.dst().t)
 			e = e.Lnext
-			if e == f.anEdge {
+			if e == startEdge {
 				break
 			}
 		}
 	}
 
-	// Debug: print computed area
-	fmt.Printf("Debug: computed signed area: %f\n", area)
-
 	if area < 0 {
 		// Reverse the orientation by flipping all the t-coordinates
-		fmt.Println("Debug: reversing orientation due to negative area")
 		for v := vHead.next; v != vHead; v = v.next {
 			v.t = -v.t
 		}
 		tess.tUnit[0] = -tess.tUnit[0]
 		tess.tUnit[1] = -tess.tUnit[1]
 		tess.tUnit[2] = -tess.tUnit[2]
-	} else {
-		fmt.Println("Debug: keeping original orientation")
 	}
 }
 

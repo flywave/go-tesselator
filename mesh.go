@@ -61,6 +61,10 @@ import (
 // and the newly created loop is eNew.Lface.  Otherwise, two disjoint
 // loops are merged into one, and the loop eDst.Lface is destroyed.
 //
+// If (eOrg == eDst), the new face will have only two edges.
+// If (eOrg.Lnext == eDst), the old face is reduced to a single edge.
+// If (eOrg.Lnext.Lnext == eDst), the old face is reduced to two edges.
+//
 // ************************ Other Operations *****************************
 //
 // tessMeshNewMesh() creates a new mesh with no edges, no vertices,
@@ -220,16 +224,22 @@ func makeEdge(m *mesh, eNext *halfEdge) *halfEdge {
 	eNext.Sym.next = eSym
 
 	e.Sym = eSym
-	e.Onext = eSym // For a single edge loop, Onext should point to the symmetric edge
-	e.Lnext = eSym // For a single edge loop, Lnext should point to the symmetric edge
+	// For a single edge loop:
+	// e->Onext = e (e的Onext指向自己)
+	// e->Lnext = eSym (e的Lnext指向对称边)
+	e.Onext = e
+	e.Lnext = eSym
 	e.Org = nil
 	e.Lface = nil
 	e.winding = 0
 	e.activeRegion = nil
 
 	eSym.Sym = e
-	eSym.Onext = e // For a single edge loop, Onext should point to the original edge
-	eSym.Lnext = e // For a single edge loop, Lnext should point to the original edge
+	// For a single edge loop:
+	// eSym->Onext = eSym (eSym的Onext指向自己)
+	// eSym->Lnext = e (eSym的Lnext指向原始边)
+	eSym.Onext = eSym
+	eSym.Lnext = e
 	eSym.Org = nil
 	eSym.Lface = nil
 	eSym.winding = 0
@@ -490,24 +500,9 @@ func tessMeshMakeEdge(m *mesh) *halfEdge {
 
 	e := makeEdge(m, &m.eHead)
 
-	// Set edge origins before calling makeVertex
-	e.Org = newVertex1
-	e.Sym.Org = newVertex2
-
 	makeVertex(newVertex1, e, &m.vHead)
 	makeVertex(newVertex2, e.Sym, &m.vHead)
-	// Ensure that the vertices' anEdge pointers point to the correct edges
-	// This is necessary because makeVertex may change the anEdge pointers during edge updates
-	newVertex1.anEdge = e
-	newVertex2.anEdge = e.Sym
-	// Also ensure that the edge origins are correct after makeVertex calls
-	// This is necessary because makeVertex may change the edge origins during edge updates
-	e.Org = newVertex1
-	e.Sym.Org = newVertex2
 	makeFace(newFace, e, &m.fHead)
-	// Double-check that the vertices' anEdge pointers are correct after makeFace
-	newVertex1.anEdge = e
-	newVertex2.anEdge = e.Sym
 	return e
 }
 
@@ -538,18 +533,22 @@ func tessMeshMakeEdge(m *mesh) *halfEdge {
 // If eDst == eOrg.Onext, the new vertex will have a single edge.
 // If eDst == eOrg.Oprev, the old vertex will have a single edge.
 func tessMeshSplice(m *mesh, eOrg *halfEdge, eDst *halfEdge) {
-	joiningLoops := false
-	joiningVertices := false
-
+	// If eDst == eOrg, the operation has no effect.
 	if eOrg == eDst {
 		return
 	}
 
+	joiningVertices := false
+	joiningLoops := false
+
+	// Check if we're merging vertices
 	if eDst.Org != eOrg.Org {
 		// We are merging two disjoint vertices -- destroy eDst.Org
 		joiningVertices = true
 		killVertex(m, eDst.Org, eOrg.Org)
 	}
+
+	// Check if we're merging faces
 	if eDst.Lface != eOrg.Lface {
 		// We are connecting two disjoint loops -- destroy eDst.Lface
 		joiningLoops = true
@@ -559,42 +558,23 @@ func tessMeshSplice(m *mesh, eOrg *halfEdge, eDst *halfEdge) {
 	// Change the edge structure
 	splice(eDst, eOrg)
 
+	// If we didn't merge vertices, we're splitting one vertex into two
 	if !joiningVertices {
 		newVertex := &vertex{}
-
 		// We split one vertex into two -- the new vertex is eDst.Org.
 		// Make sure the old vertex points to a valid half-edge.
 		makeVertex(newVertex, eDst, eOrg.Org)
 		eOrg.Org.anEdge = eOrg
 	}
+
+	// If we didn't merge faces, we're splitting one loop into two
 	if !joiningLoops {
 		newFace := &face{}
-
 		// We split one loop into two -- the new loop is eDst.Lface.
 		// Make sure the old face points to a valid half-edge.
 		if eOrg.Lface != nil {
 			makeFace(newFace, eDst, eOrg.Lface)
 			eOrg.Lface.anEdge = eOrg
-		} else {
-			println("WARNING: eOrg.Lface is nil in tessMeshSplice, skipping makeFace")
-			// Add the new face to the mesh's face list directly
-			newFace.anEdge = eDst
-			newFace.trail = nil
-			newFace.marked = false
-			newFace.inside = false
-
-			// Insert the new face at the beginning of the face list
-			if m.fHead.next != nil {
-				newFace.next = m.fHead.next
-				newFace.prev = &m.fHead
-				m.fHead.next.prev = newFace
-				m.fHead.next = newFace
-			} else {
-				m.fHead.next = newFace
-				m.fHead.prev = newFace
-				newFace.next = &m.fHead
-				newFace.prev = &m.fHead
-			}
 		}
 	}
 }
@@ -676,11 +656,6 @@ func tessMeshAddEdgeVertex(m *mesh, eOrg *halfEdge) *halfEdge {
 	eNew.Lface = eOrg.Lface
 	eNewSym.Lface = eOrg.Lface
 
-	// Ensure that eOrg.Lnext points to eNew as expected
-	eOrg.Lnext = eNew
-	// Also ensure that eNew.Lnext points to eOrg.Lnext as expected by the test
-	eNew.Lnext = eOrg.Lnext
-
 	return eNew
 }
 
@@ -702,9 +677,6 @@ func tessMeshSplitEdge(m *mesh, eOrg *halfEdge) *halfEdge {
 	eNew.setRFace(eOrg.rFace())
 	eNew.winding = eOrg.winding // copy old winding information
 	eNew.Sym.winding = eOrg.Sym.winding
-
-	// Ensure that eOrg.Lnext points to eNew as expected by the test
-	eOrg.Lnext = eNew
 
 	return eNew
 }
@@ -1020,7 +992,7 @@ func tessMeshCheckMesh(m *mesh) {
 				panic("tess: e.Sym.Sym != e in tessMeshCheckMesh")
 			}
 			if e.Lnext.Onext.Sym != e {
-				panic("tess: e.Lnext.Onext.Sym != e in tessMeshCheckMesh")
+				panic("t0ess: e.Lnext.Onext.Sym != e in tessMeshCheckMesh")
 			}
 			if e.Onext.Sym.Lnext != e {
 				panic("tess: e.Onext.Sym.Lnext != e in tessMeshCheckMesh")

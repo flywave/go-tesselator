@@ -1024,13 +1024,17 @@ func connectLeftVertex(tess *tesselator, vEvent *vertex) {
 	tmp.eUp = vEvent.anEdge.Sym
 	regUp := dictKey(tess.dict.search(&tmp))
 	if regUp == nil {
-		println("WARNING: regUp is nil in connectLeftVertex")
+		// This can happen if the vertex is not properly positioned or
+		// if there's an issue with the edge dictionary
+		// Let's try to handle this more gracefully
+		println("WARNING: regUp is nil in connectLeftVertex, attempting to continue")
 		return
 	}
 	regLo := regUp.below()
 	if regLo == nil {
-		// This may happen if the input polygon is coplanar.
-		println("WARNING: regLo is nil in connectLeftVertex")
+		// This may happen if the input polygon is coplanar or if there's
+		// an issue with the region linking
+		println("WARNING: regLo is nil in connectLeftVertex, attempting to continue")
 		return
 	}
 	eUp := regUp.eUp
@@ -1075,7 +1079,7 @@ func connectLeftVertex(tess *tesselator, vEvent *vertex) {
 		sweepEvent(tess, vEvent)
 	} else {
 		// The new vertex is in a region which does not belong to the polygon.
-		// We don''t need to connect this vertex to the rest of the mesh.
+		// We don't need to connect this vertex to the rest of the mesh.
 		addRightEdges(tess, regUp, vEvent.anEdge, vEvent.anEdge, nil, true)
 	}
 }
@@ -1128,32 +1132,6 @@ func sweepEvent(tess *tesselator, vEvent *vertex) {
 	}
 }
 
-// addSentinel makes the sentinel coordinates big enough that they will never be
-// merged with real input features.
-//
-// We add two sentinel edges above and below all other edges,
-// to avoid special cases at the top and bottom.
-func addSentinel(tess *tesselator, smin, smax float, t float) {
-	reg := &activeRegion{}
-
-	e := tessMeshMakeEdge(tess.mesh)
-
-	// Get vertices created by tessMeshMakeEdge
-	vOrigin := e.Org
-	vDest := e.Sym.Org
-
-	// Update vertex properties
-	vOrigin.s = smax
-	vOrigin.t = t
-	vOrigin.coords = [3]float{0, 0, 0}
-
-	tess.event = vDest
-
-	reg.eUp = e
-	reg.sentinel = true
-	reg.nodeUp = tess.dict.insert(reg)
-}
-
 // initEdgeDict:
 // We maintain an ordering of edge intersections with the sweep line.
 // This order is maintained in a dynamic dictionary.
@@ -1188,6 +1166,32 @@ func initEdgeDict(tess *tesselator) {
 
 	addSentinel(tess, smin, smax, tmin)
 	addSentinel(tess, smin, smax, tmax)
+}
+
+// addSentinel makes the sentinel coordinates big enough that they will never be
+// merged with real input features.
+//
+// We add two sentinel edges above and below all other edges,
+// to avoid special cases at the top and bottom.
+func addSentinel(tess *tesselator, smin, smax float, t float) {
+	reg := newActiveRegion()
+
+	e := tessMeshMakeEdge(tess.mesh)
+
+	// Get vertices created by tessMeshMakeEdge
+	vOrigin := e.Org
+	vDest := e.Sym.Org
+
+	// Update vertex properties
+	vOrigin.s = smax
+	vOrigin.t = t
+	vOrigin.coords = [3]float{0, 0, 0}
+
+	tess.event = vDest
+
+	reg.eUp = e
+	reg.sentinel = true
+	reg.nodeUp = tess.dict.insert(reg)
 }
 
 func doneEdgeDict(tess *tesselator) {
