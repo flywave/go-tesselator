@@ -295,51 +295,6 @@ func TestEdgeIntersect(t *testing.T) {
 	}
 }
 
-// TestInCircle 测试点是否在圆内
-func TestInCircle(t *testing.T) {
-	// 定义三个点形成一个圆 (逆时针顺序)
-	v0 := &vertex{s: 0.0, t: 0.0}
-	v1 := &vertex{s: 2.0, t: 0.0}
-	v2 := &vertex{s: 1.0, t: 2.0}
-
-	// 实际圆心(1,0.75)，半径1.25
-
-	// 点在圆内 (1, 0.5) - 到圆心距离0.25 < 1.25
-	vInside := &vertex{s: 1.0, t: 0.5}
-	result := inCircle(vInside, v0, v1, v2)
-	if result <= 0 {
-		t.Errorf("Expected inCircle(%v, %v, %v, %v) > 0, got %v", vInside, v0, v1, v2, result)
-	}
-
-	// 点在圆上 (1,2) - 第三个点自身
-	vOnCircle := v2
-	result = inCircle(vOnCircle, v0, v1, v2)
-	if math.Abs(float64(result)) > 1e-6 {
-		t.Errorf("Expected inCircle(%v, %v, %v, %v) ≈ 0, got %v", vOnCircle, v0, v1, v2, result)
-	}
-
-	// 点在圆上 (0,1.5) - 验证在圆上
-	vOnCircle2 := &vertex{s: 0.0, t: 1.5}
-	result = inCircle(vOnCircle2, v0, v1, v2)
-	if math.Abs(float64(result)) > 1e-6 {
-		t.Errorf("Expected inCircle(%v, %v, %v, %v) ≈ 0, got %v", vOnCircle2, v0, v1, v2, result)
-	}
-
-	// 点在圆外 (3,3) - 到圆心距离√[(3-1)²+(3-0.75)²] ≈ 3.01 > 1.25
-	vOutside := &vertex{s: 3.0, t: 3.0}
-	result = inCircle(vOutside, v0, v1, v2)
-	if result >= 0 {
-		t.Errorf("Expected inCircle(%v, %v, %v, %v) < 0, got %v", vOutside, v0, v1, v2, result)
-	}
-
-	// 点在圆外 (0,3) - 到圆心距离√[(0-1)²+(3-0.75)²] ≈ 2.46 > 1.25
-	vOutside2 := &vertex{s: 0.0, t: 3.0}
-	result = inCircle(vOutside2, v0, v1, v2)
-	if result >= 0 {
-		t.Errorf("Expected inCircle(%v, %v, %v, %v) < 0, got %v", vOutside2, v0, v1, v2, result)
-	}
-}
-
 // TestTransEval 测试transEval函数
 func TestTransEval(t *testing.T) {
 	// 创建测试点，确保它们满足transLeq顺序 (按t坐标排序)

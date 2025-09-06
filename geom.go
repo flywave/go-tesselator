@@ -1,9 +1,5 @@
 package tesselator
 
-import (
-	"math"
-)
-
 func vertEq(u, v *vertex) bool {
 	return u.s == v.s && u.t == v.t
 }
@@ -65,12 +61,7 @@ func edgeSign(u, v, w *vertex) float {
 	gapR := w.s - v.s
 
 	if gapL+gapR > 0 {
-		result := (v.t-w.t)*gapL + (v.t-u.t)*gapR
-		// 处理NaN值的情况
-		if math.IsNaN(float64(result)) {
-			return 0
-		}
-		return result
+		return (v.t-w.t)*gapL + (v.t-u.t)*gapR
 	}
 	// vertical line
 	return 0
@@ -113,12 +104,7 @@ func transSign(u, v, w *vertex) float {
 	gapR := w.t - v.t
 
 	if gapL+gapR > 0 {
-		result := (v.s-w.s)*gapL + (v.s-u.s)*gapR
-		// 处理NaN值的情况
-		if math.IsNaN(float64(result)) {
-			return 0
-		}
-		return result
+		return (v.s-w.s)*gapL + (v.s-u.s)*gapR
 	}
 	// vertical line
 	return 0
@@ -239,42 +225,4 @@ func edgeIntersect(o1 *vertex, d1 *vertex, o2 *vertex, d2 *vertex, v *vertex) {
 		}
 		v.t = interpolate(z1, o2.t, z2, d2.t)
 	}
-}
-
-// inCircle 判断点v是否在由v0、v1、v2组成的圆内
-// 返回值大于0表示在圆内，等于0表示在圆上，小于0表示在圆外
-func inCircle(v, v0, v1, v2 *vertex) float {
-	// 使用标准的4x4行列式计算
-	// 这种方法在计算几何中更稳定
-
-	// 转换为float64进行计算
-	x := float64(v.s)
-	y := float64(v.t)
-	x0 := float64(v0.s)
-	y0 := float64(v0.t)
-	x1 := float64(v1.s)
-	y1 := float64(v1.t)
-	x2 := float64(v2.s)
-	y2 := float64(v2.t)
-
-	// 计算各点的x²+y²
-	r := x*x + y*y
-	r0 := x0*x0 + y0*y0
-	r1 := x1*x1 + y1*y1
-	r2 := x2*x2 + y2*y2
-
-	// 计算行列式的值
-	// |x  y  r  1|
-	// |x0 y0 r0 1|
-	// |x1 y1 r1 1|
-	// |x2 y2 r2 1|
-	det := x*(y0*(r1 - r2) + y1*(r2 - r0) + y2*(r0 - r1)) -
-		   y*(x0*(r1 - r2) + x1*(r2 - r0) + x2*(r0 - r1)) +
-		   r*(x0*(y1 - y2) + x1*(y2 - y0) + x2*(y0 - y1)) -
-		   (x0*(y1*r2 - y2*r1) + x1*(y2*r0 - y0*r2) + x2*(y0*r1 - y1*r0))
-
-	// 返回行列式值的符号决定点的位置
-	// 除以2是为了与传统定义一致，但不影响符号
-	// 反转符号以符合测试期望（顺时针/逆时针 winding顺序问题）
-	return float(-det / 2.0)
 }

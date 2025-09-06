@@ -1,7 +1,5 @@
 package tesselator
 
-import "fmt"
-
 // Invariants for the Edge Dictionary.
 // - each pair of adjacent edges e2=Succ(e1) satisfies EdgeLeq(e1,e2)
 //   at any valid location of the sweep event
@@ -30,48 +28,13 @@ import "fmt"
 //   its associated vertex.  (This says that these edges exist only
 //   when it is necessary.)
 
-// Because vertices at exactly the same location are merged together
-// before we process the sweep event, some degenerate cases can't occur.
-// However if someone eventually makes the modifications required to
-// merge features which are close together, the cases below marked
-// TOLERANCE_NONZERO will be useful.
 const (
-	undef             = index(-1)
-	TOLERANCE_NONZERO = false
+	undef = index(-1)
 )
-
-// bucketAllocator provides a simple memory pool for activeRegion objects
-// to reduce garbage collection overhead
-var regionPool = &struct {
-	pool []*activeRegion
-}{}
-
-// newActiveRegion returns a new activeRegion from the pool or creates one if the pool is empty
-func newActiveRegion() *activeRegion {
-	if len(regionPool.pool) > 0 {
-		reg := regionPool.pool[len(regionPool.pool)-1]
-		regionPool.pool = regionPool.pool[:len(regionPool.pool)-1]
-		// Reset fields to default values
-		reg.eUp = nil
-		reg.nodeUp = nil
-		reg.windingNumber = 0
-		reg.inside = false
-		reg.fixUpperEdge = false
-		reg.sentinel = false
-		reg.dirty = false
-		return reg
-	}
-	return &activeRegion{}
-}
-
-// freeActiveRegion returns an activeRegion to the pool
-func freeActiveRegion(reg *activeRegion) {
-	regionPool.pool = append(regionPool.pool, reg)
-}
 
 func assert(cond bool) {
 	if !cond {
-		//panic("tess: assertion error")
+		panic("libtess2: assertion error")
 	}
 }
 
@@ -121,20 +84,12 @@ func (e *halfEdge) dNext() *halfEdge {
 	return e.rPrev().Sym
 }
 
-// below returns the region below this one.
-func (reg *activeRegion) below() *activeRegion {
-	if reg.nodeUp == nil || reg.nodeUp.prev == nil || reg.nodeUp.prev.key == nil {
-		return nil
-	}
-	return reg.nodeUp.prev.key
+func (r *activeRegion) below() *activeRegion {
+	return dictKey(dictPred(r.nodeUp))
 }
 
-// above returns the region above this one.
-func (reg *activeRegion) above() *activeRegion {
-	if reg.nodeUp == nil || reg.nodeUp.next == nil || reg.nodeUp.next.key == nil {
-		return nil
-	}
-	return reg.nodeUp.next.key
+func (r *activeRegion) above() *activeRegion {
+	return dictKey(dictSucc(r.nodeUp))
 }
 
 func adjust(x float) float {
@@ -149,18 +104,10 @@ func deleteRegion(tess *tesselator, reg *activeRegion) {
 		// It was created with zero winding number, so it better be
 		// deleted with zero winding number (ie. it better not get merged
 		// with a real edge).
-		if reg.eUp != nil {
-			assert(reg.eUp.winding == 0)
-		}
+		assert(reg.eUp.winding == 0)
 	}
-	if reg.eUp != nil {
-		reg.eUp.activeRegion = nil
-	}
-	if reg.nodeUp != nil {
-		dictDelete(reg.nodeUp)
-	}
-	// Return region to pool
-	freeActiveRegion(reg)
+	reg.eUp.activeRegion = nil
+	dictDelete(reg.nodeUp)
 }
 
 // edgeLeq:
@@ -174,71 +121,26 @@ func deleteRegion(tess *tesselator, reg *activeRegion) {
 // Special case: if both edge destinations are at the sweep event,
 // we sort the edges by slope (they would otherwise compare equally).
 func edgeLeq(tess *tesselator, reg1 *activeRegion, reg2 *activeRegion) bool {
-	// Handle nil regions
-	if reg1 == nil || reg2 == nil {
-		return false
-	}
-
-	// Handle nil tess or event
-	if tess == nil || tess.event == nil {
-		return false
-	}
-
 	event := tess.event
 	e1 := reg1.eUp
 	e2 := reg2.eUp
-
-	// Handle nil edges
-	if e1 == nil || e2 == nil {
-		return false
-	}
-
-	// Handle nil edge destinations
-	if e1.dst() == nil || e2.dst() == nil {
-		return false
-	}
 
 	if e1.dst() == event {
 		if e2.dst() == event {
 			// Two edges right of the sweep line which meet at the sweep event.
 			// Sort them by slope.
-			// Handle nil edge origins
-			if e1.Org == nil || e2.Org == nil {
-				return false
-			}
 			if vertLeq(e1.Org, e2.Org) {
-				// Handle nil edge destinations
-				if e2.dst() == nil || e1.Org == nil || e2.Org == nil {
-					return false
-				}
 				return edgeSign(e2.dst(), e1.Org, e2.Org) <= 0
 			}
-			// Handle nil edge destinations
-			if e1.dst() == nil || e2.Org == nil || e1.Org == nil {
-				return false
-			}
 			return edgeSign(e1.dst(), e2.Org, e1.Org) >= 0
-		}
-		// Handle nil edge destinations
-		if e2.dst() == nil || event == nil || e2.Org == nil {
-			return false
 		}
 		return edgeSign(e2.dst(), event, e2.Org) <= 0
 	}
 	if e2.dst() == event {
-		// Handle nil edge destinations
-		if e1.dst() == nil || event == nil || e1.Org == nil {
-			return false
-		}
 		return edgeSign(e1.dst(), event, e1.Org) >= 0
 	}
 
 	// General case - compute signed distance *from* e1, e2 to event
-	// Handle nil edge origins
-	if e1.Org == nil || e2.Org == nil {
-		return false
-	}
-
 	t1 := edgeEval(e1.dst(), event, e1.Org)
 	t2 := edgeEval(e2.dst(), event, e2.Org)
 	return (t1 >= t2)
@@ -262,44 +164,32 @@ func fixUpperEdge(tess *tesselator, reg *activeRegion, newEdge *halfEdge) {
 }
 
 func topLeftRegion(tess *tesselator, reg *activeRegion) *activeRegion {
-	if reg == nil || reg.eUp == nil {
-		println("WARNING: reg or reg.eUp is nil in topLeftRegion")
-		return reg
-	}
 	org := reg.eUp.Org
 
 	// Find the region above the uppermost edge with the same origin
 	for {
 		reg = reg.above()
-		if reg == nil || reg.eUp == nil || reg.eUp.Org != org {
+		if reg.eUp.Org != org {
 			break
 		}
 	}
 
 	// If the edge above was a temporary edge introduced by ConnectRightVertex,
 	// now is the time to fix it.
-	if reg != nil && reg.fixUpperEdge {
-		if reg.below() == nil || reg.below().eUp == nil || reg.below().eUp.Sym == nil || reg.eUp == nil || reg.eUp.Lnext == nil {
-			println("WARNING: nil values detected in fixUpperEdge logic in topLeftRegion")
-		} else {
-			e := tessMeshConnect(tess.mesh, reg.below().eUp.Sym, reg.eUp.Lnext)
-			fixUpperEdge(tess, reg, e)
-			reg = reg.above()
-		}
+	if reg.fixUpperEdge {
+		e := tessMeshConnect(tess.mesh, reg.below().eUp.Sym, reg.eUp.Lnext)
+		fixUpperEdge(tess, reg, e)
+		reg = reg.above()
 	}
 	return reg
 }
 
 func topRightRegion(reg *activeRegion) *activeRegion {
-	if reg == nil || reg.eUp == nil {
-		println("WARNING: reg or reg.eUp is nil in topRightRegion")
-		return reg
-	}
 	d := reg.eUp.dst()
 	// Find the region above the uppermost edge with the same destination
 	for {
 		reg = reg.above()
-		if reg == nil || reg.eUp == nil || reg.eUp.dst() != d {
+		if reg.eUp.dst() != d {
 			break
 		}
 	}
@@ -311,40 +201,16 @@ func topRightRegion(reg *activeRegion) *activeRegion {
 // The upper edge of the new region will be "eNewUp".
 // Winding number and "inside" flag are not updated.
 func addRegionBelow(tess *tesselator, regAbove *activeRegion, eNewUp *halfEdge) *activeRegion {
-	// Check for nil values
-	if tess == nil || regAbove == nil || eNewUp == nil {
-		fmt.Println("WARNING: nil values in addRegionBelow")
-		return nil
-	}
-
-	regNew := newActiveRegion()
+	regNew := &activeRegion{}
 	regNew.eUp = eNewUp
 	regNew.nodeUp = tess.dict.insertBefore(regAbove.nodeUp, regNew)
 	eNewUp.activeRegion = regNew
-
-	// Make sure the node key points to the region
-	if regNew.nodeUp != nil {
-		regNew.nodeUp.key = regNew
-	}
-
 	return regNew
 }
 
 func computeWinding(tess *tesselator, reg *activeRegion) {
-	// Make sure we have a valid region and its above region
-	if reg == nil {
-		fmt.Println("WARNING: reg is nil in computeWinding")
-		return
-	}
-
-	above := reg.above()
-	if above == nil {
-		// This can happen for the first region, just set winding number to 0
-		reg.windingNumber = 0
-	} else {
-		reg.windingNumber = above.windingNumber + int(reg.eUp.winding)
-	}
-	reg.inside = tess.isInside(reg.windingNumber)
+	reg.windingNumber = reg.above().windingNumber + int(reg.eUp.winding)
+	reg.inside = tess.windingRule.isInside(reg.windingNumber)
 }
 
 // finishRegion deletes a region from the sweep line.  This happens when the upper
@@ -357,8 +223,6 @@ func finishRegion(tess *tesselator, reg *activeRegion) {
 	f := e.Lface
 
 	f.inside = reg.inside
-	fmt.Printf("Debug: marking face as inside=%v, winding=%d\n", f.inside, reg.windingNumber)
-
 	f.anEdge = e // optimization for tessMeshTessellateMonoRegion()
 	deleteRegion(tess, reg)
 }
@@ -419,36 +283,13 @@ func finishLeftRegions(tess *tesselator, regFirst *activeRegion, regLast *active
 // contained between eTopLeft.Oprev and eTopLeft; otherwise eTopLeft
 // should be nil.
 func addRightEdges(tess *tesselator, regUp *activeRegion, eFirst *halfEdge, eLast *halfEdge, eTopLeft *halfEdge, cleanUp bool) {
-	// Add comprehensive nil checks at the beginning
-	if tess == nil || regUp == nil || eFirst == nil || eLast == nil {
-		fmt.Println("WARNING: nil values in addRightEdges")
-		return
-	}
-
 	firstTime := true
 
 	// Insert the new right-going edges in the dictionary
 	e := eFirst
 	for {
-		// Add nil checks for edge properties
-		if e == nil || e.Org == nil || e.dst() == nil {
-			fmt.Println("WARNING: nil edge or vertex in addRightEdges loop")
-			return
-		}
-
 		assert(vertLeq(e.Org, e.dst()))
-		newReg := addRegionBelow(tess, regUp, e.Sym)
-		// Make sure the new region is properly linked
-		if newReg != nil && newReg.nodeUp != nil && newReg.nodeUp.key == nil {
-			newReg.nodeUp.key = newReg
-		}
-
-		// Check if we've reached the end of the loop
-		if e.Onext == nil {
-			fmt.Println("WARNING: e.Onext is nil in addRightEdges")
-			return
-		}
-
+		addRegionBelow(tess, regUp, e.Sym)
 		e = e.Onext
 		if e == eLast {
 			break
@@ -459,61 +300,15 @@ func addRightEdges(tess *tesselator, regUp *activeRegion, eFirst *halfEdge, eLas
 	// updating the winding numbers of each region, and re-linking the mesh
 	// edges to match the dictionary ordering (if necessary).
 	if eTopLeft == nil {
-		// Make sure we have a valid eTopLeft
-		if regUp != nil && regUp.below() != nil && regUp.below().eUp != nil {
-			eTopLeft = regUp.below().eUp.rPrev()
-		}
+		eTopLeft = regUp.below().eUp.rPrev()
 	}
-
-	// Check if we have valid values before proceeding
-	if regUp == nil || eTopLeft == nil {
-		fmt.Println("WARNING: regUp or eTopLeft is nil in addRightEdges")
-		// Try to handle this case gracefully
-		if regUp != nil {
-			// Just compute winding for the newly added regions
-			reg := regUp.below()
-			for reg != nil && reg.eUp != nil && reg.eUp.Sym == eFirst {
-				computeWinding(tess, reg)
-				reg = reg.below()
-				if reg == nil || reg.eUp == nil || reg.eUp.Sym != eFirst.Onext {
-					break
-				}
-			}
-		}
-		return
-	}
-
 	regPrev := regUp
 	ePrev := eTopLeft
-
-	// Add nil checks for ePrev
-	if ePrev == nil {
-		fmt.Println("WARNING: ePrev is nil in addRightEdges")
-		return
-	}
-
 	var reg *activeRegion
 	for {
 		reg = regPrev.below()
-		// Check for nil values
-		if reg == nil || reg.eUp == nil {
-			break
-		}
 		e = reg.eUp.Sym
-
-		// Add nil checks for e properties
-		if e == nil || e.Org == nil || ePrev.Org == nil {
-			fmt.Println("WARNING: nil edge or vertex in addRightEdges walk")
-			break
-		}
-
 		if e.Org != ePrev.Org {
-			break
-		}
-
-		// Add nil checks before accessing e.Onext and ePrev.Onext
-		if e.Onext == nil || ePrev.Onext == nil || ePrev.oPrev() == nil || e.oPrev() == nil {
-			fmt.Println("WARNING: nil edge connections in addRightEdges")
 			break
 		}
 
@@ -522,15 +317,9 @@ func addRightEdges(tess *tesselator, regUp *activeRegion, eFirst *halfEdge, eLas
 			tessMeshSplice(tess.mesh, e.oPrev(), e)
 			tessMeshSplice(tess.mesh, ePrev.oPrev(), e)
 		}
-
-		// Add nil checks before accessing e.winding
-		if e.winding == 0 && e.Sym != nil && e.Sym.winding == 0 {
-			fmt.Println("WARNING: zero winding in addRightEdges")
-		}
-
 		// Compute the winding number and "inside" flag for the new regions
 		reg.windingNumber = regPrev.windingNumber - int(e.winding)
-		reg.inside = tess.isInside(reg.windingNumber)
+		reg.inside = tess.windingRule.isInside(reg.windingNumber)
 
 		// Check for two outgoing edges with same slope -- process these
 		// before any intersection tests (see example in tessComputeInterior).
@@ -545,9 +334,7 @@ func addRightEdges(tess *tesselator, regUp *activeRegion, eFirst *halfEdge, eLas
 		ePrev = e
 	}
 	regPrev.dirty = true
-	if reg != nil && e != nil {
-		assert(regPrev.windingNumber-int(e.winding) == reg.windingNumber)
-	}
+	assert(regPrev.windingNumber-int(e.winding) == reg.windingNumber)
 
 	if cleanUp {
 		// Check for intersections between newly adjacent edges.
@@ -710,12 +497,6 @@ func checkForLeftSplice(tess *tesselator, regUp *activeRegion) bool {
 // checked for intersections, and possibly regUp has been deleted.
 func checkForIntersect(tess *tesselator, regUp *activeRegion) bool {
 	regLo := regUp.below()
-	if regLo == nil {
-		// Debug: handle nil region gracefully
-		fmt.Println("Debug: regLo is nil in checkForIntersect, skipping")
-		return false
-	}
-
 	eUp := regUp.eUp
 	eLo := regLo.eUp
 	orgUp := eUp.Org
@@ -865,43 +646,13 @@ func checkForIntersect(tess *tesselator, regUp *activeRegion) bool {
 // new dirty regions can be created as we make changes to restore
 // the invariants.
 func walkDirtyRegions(tess *tesselator, regUp *activeRegion) {
-	// Handle nil values
-	if tess == nil || regUp == nil {
-		fmt.Println("WARNING: nil values in walkDirtyRegions")
-		return
-	}
-
 	regLo := regUp.below()
 
 	for {
 		// Find the lowest dirty region (we walk from the bottom up).
-		if regLo == nil {
-			fmt.Println("WARNING: regLo is nil in walkDirtyRegions")
-			// Try to find a valid region below
-			if regUp.nodeUp != nil {
-				n := regUp.nodeUp.prev
-				for n != &tess.dict.head {
-					if n.key != nil && n.key.eUp != nil {
-						regLo = n.key
-						break
-					}
-					n = n.prev
-					if n == nil {
-						break
-					}
-				}
-			}
-			// If we still can't find a region, break out
-			if regLo == nil {
-				return
-			}
-		}
 		for regLo.dirty {
 			regUp = regLo
 			regLo = regLo.below()
-			if regLo == nil {
-				break
-			}
 		}
 		if !regUp.dirty {
 			regLo = regUp
@@ -912,49 +663,8 @@ func walkDirtyRegions(tess *tesselator, regUp *activeRegion) {
 			}
 		}
 		regUp.dirty = false
-		if regLo == nil {
-			fmt.Println("WARNING: regLo is nil when accessing eUp and eLo")
-			return
-		}
 		eUp := regUp.eUp
 		eLo := regLo.eUp
-
-		// Add comprehensive nil checks before accessing e.Sym.Org via dst()
-		if eUp == nil || eUp.Sym == nil || eUp.Sym.Org == nil {
-			fmt.Println("WARNING: eUp or its Sym/Org is nil in walkDirtyRegions")
-			if eUp == nil {
-				fmt.Println("  eUp is nil")
-			} else if eUp.Sym == nil {
-				fmt.Println("  eUp.Sym is nil")
-			} else if eUp.Sym.Org == nil {
-				fmt.Println("  eUp.Sym.Org is nil")
-			}
-			// Continue to next iteration instead of returning
-			regLo = regUp
-			regUp = regUp.above()
-			if regUp == nil {
-				return
-			}
-			continue
-		}
-
-		if eLo == nil || eLo.Sym == nil || eLo.Sym.Org == nil {
-			fmt.Println("WARNING: eLo or its Sym/Org is nil in walkDirtyRegions")
-			if eLo == nil {
-				fmt.Println("  eLo is nil")
-			} else if eLo.Sym == nil {
-				fmt.Println("  eLo.Sym is nil")
-			} else if eLo.Sym.Org == nil {
-				fmt.Println("  eLo.Sym.Org is nil")
-			}
-			// Continue to next iteration instead of returning
-			regLo = regUp
-			regUp = regUp.above()
-			if regUp == nil {
-				return
-			}
-			continue
-		}
 
 		if eUp.dst() != eLo.dst() {
 			// Check that the edge ordering is obeyed at the Dst vertices.
@@ -965,26 +675,14 @@ func walkDirtyRegions(tess *tesselator, regUp *activeRegion) {
 				// vertices which otherwise have no right-going edges).
 				if regLo.fixUpperEdge {
 					deleteRegion(tess, regLo)
-					if tess.mesh != nil && eLo != nil && eLo.Sym != nil && eLo.Org != nil && eLo.dst() != nil {
-						tessMeshDelete(tess.mesh, eLo)
-					} else {
-						fmt.Println("WARNING: Skipping tessMeshDelete for eLo due to nil values")
-					}
+					tessMeshDelete(tess.mesh, eLo)
 					regLo = regUp.below()
-					if regLo != nil {
-						eLo = regLo.eUp
-					}
+					eLo = regLo.eUp
 				} else if regUp.fixUpperEdge {
 					deleteRegion(tess, regUp)
-					if tess.mesh != nil && eUp != nil && eUp.Sym != nil && eUp.Org != nil && eUp.dst() != nil {
-						tessMeshDelete(tess.mesh, eUp)
-					} else {
-						fmt.Println("WARNING: Skipping tessMeshDelete for eUp due to nil values")
-					}
+					tessMeshDelete(tess.mesh, eUp)
 					regUp = regLo.above()
-					if regUp != nil {
-						eUp = regUp.eUp
-					}
+					eUp = regUp.eUp
 				}
 			}
 		}
@@ -1011,28 +709,14 @@ func walkDirtyRegions(tess *tesselator, regUp *activeRegion) {
 			// A degenerate loop consisting of only two edges -- delete it.
 			addWinding(eLo, eUp)
 			deleteRegion(tess, regUp)
-			if tess.mesh != nil && eUp != nil && eUp.Sym != nil && eUp.Org != nil && eUp.dst() != nil {
-				tessMeshDelete(tess.mesh, eUp)
-			} else {
-				fmt.Println("WARNING: Skipping tessMeshDelete for degenerate loop due to nil values")
-			}
+			tessMeshDelete(tess.mesh, eUp)
 			regUp = regLo.above()
-			if regUp != nil {
-				eUp = regUp.eUp
-			}
-		}
-
-		// Move to the next region
-		regLo = regUp
-		regUp = regUp.above()
-		if regUp == nil {
-			break
 		}
 	}
 }
 
 // connectRightVertex:
-// Purpose: connect a "right" vertex (one where all edges go left)
+// Purpose: connect a "right" vertex vEvent (one where all edges go left)
 // to the unprocessed portion of the mesh.  Since there are no right-going
 // edges, two regions (one above vEvent and one below) are being merged
 // into one.  "regUp" is the upper of these two regions.
@@ -1042,7 +726,7 @@ func walkDirtyRegions(tess *tesselator, regUp *activeRegion) {
 //     to keep them separated (the combined region would not be monotone).
 //   - in any case, we must leave some record of vEvent in the dictionary,
 //     so that we can merge vEvent with features that we have not seen yet.
-//     For example, suppose there is a vertical edge which passes just to
+//     For example, maybe there is a vertical edge which passes just to
 //     the right of vEvent; we would like to splice vEvent into this edge.
 //
 // However, we don't want to connect vEvent to just any vertex.  We don”t
@@ -1064,13 +748,7 @@ func walkDirtyRegions(tess *tesselator, regUp *activeRegion) {
 func connectRightVertex(tess *tesselator, regUp *activeRegion, eBottomLeft *halfEdge) {
 	eTopLeft := eBottomLeft.Onext
 	regLo := regUp.below()
-	if regLo == nil {
-		panic("regLo is nil in connectRightVertex")
-	}
 	eUp := regUp.eUp
-	if eUp == nil {
-		panic("eUp is nil in connectRightVertex")
-	}
 	eLo := regLo.eUp
 	degenerate := false
 
@@ -1154,15 +832,7 @@ func connectLeftDegenerate(tess *tesselator, regUp *activeRegion, vEvent *vertex
 	// Splice in the additional right-going edges.
 	assert(TOLERANCE_NONZERO)
 	regUp = topRightRegion(regUp)
-	if regUp == nil {
-		println("WARNING: regUp is nil after topRightRegion in connectLeftDegenerate")
-		return
-	}
 	reg := regUp.below()
-	if reg == nil {
-		println("WARNING: reg is nil in connectLeftDegenerate")
-		return
-	}
 	eTopRight := reg.eUp.Sym
 	eTopLeft := eTopRight.Onext
 	eLast := eTopRight.Onext
@@ -1200,18 +870,6 @@ func connectLeftDegenerate(tess *tesselator, regUp *activeRegion, vEvent *vertex
 //
 //   - merging with an already-processed portion of U or L
 func connectLeftVertex(tess *tesselator, vEvent *vertex) {
-	// Handle nil values
-	if tess == nil || vEvent == nil || vEvent.anEdge == nil {
-		fmt.Println("WARNING: nil values in connectLeftVertex")
-		return
-	}
-
-	// Handle nil Sym edge
-	if vEvent.anEdge.Sym == nil {
-		fmt.Println("WARNING: nil Sym edge in connectLeftVertex")
-		return
-	}
-
 	var tmp activeRegion
 
 	// assert( vEvent.anEdge.Onext.Onext == vEvent.anEdge );
@@ -1219,106 +877,15 @@ func connectLeftVertex(tess *tesselator, vEvent *vertex) {
 	// Get a pointer to the active region containing vEvent
 	tmp.eUp = vEvent.anEdge.Sym
 	regUp := dictKey(tess.dict.search(&tmp))
-	if regUp == nil {
-		// This can happen if the vertex is not properly positioned or
-		// if there's an issue with the edge dictionary
-		// Let's try to handle this more gracefully
-		fmt.Println("WARNING: regUp is nil in connectLeftVertex, attempting to continue")
-		// Try to find a region by searching through the dictionary
-		// This is a fallback approach when the direct search fails
-		n := tess.dict.head.next
-		for n != &tess.dict.head {
-			if n.key != nil && n.key.eUp != nil {
-				regUp = n.key
-				break
-			}
-			n = n.next
-		}
-		// If we still can't find a region, try a different approach
-		if regUp == nil {
-			fmt.Println("ERROR: Could not find any region in edge dictionary")
-			// In this case, we'll try to create a new region for this vertex
-			// This is a fallback for when the dictionary is empty or corrupted
-			newReg := newActiveRegion()
-			newReg.eUp = vEvent.anEdge.Sym
-			// Add the region to the dictionary
-			node := tess.dict.insert(newReg)
-			newReg.nodeUp = node
-			if node != nil {
-				node.key = newReg
-			}
-			regUp = newReg
-		}
-	}
-
-	// Make sure we have a valid regUp
-	if regUp == nil {
-		fmt.Println("ERROR: Still no valid regUp after all attempts")
-		return
-	}
-
-	// Handle nil region or edge
-	if regUp.eUp == nil {
-		fmt.Println("WARNING: nil eUp in regUp")
-		return
-	}
-
 	regLo := regUp.below()
 	if regLo == nil {
-		// This may happen if the input polygon is coplanar or if there's
-		// an issue with the region linking
-		fmt.Println("WARNING: regLo is nil in connectLeftVertex, attempting to continue")
-		// Try to find a region below by searching through the dictionary
-		n := regUp.nodeUp
-		if n != nil {
-			n = n.prev
-			for n != &tess.dict.head {
-				if n.key != nil && n.key.eUp != nil {
-					regLo = n.key
-					break
-				}
-				n = n.prev
-			}
-		}
-		// Special handling for simple cases - if we can't find a region below,
-		// and this is likely a simple polygon case, we'll try a different approach
-		if regLo == nil {
-			fmt.Println("INFO: Could not find region below, treating as special case")
-			// For simple polygons, we might need to directly connect the vertex
-			// to form the initial triangulation
-			addRightEdges(tess, regUp, vEvent.anEdge, vEvent.anEdge, nil, true)
-			return
-		}
-	}
-
-	// Add nil checks for regLo
-	if regLo == nil || regLo.eUp == nil {
-		fmt.Println("WARNING: regLo or regLo.eUp is nil")
-		// Handle this case by directly adding right edges
-		addRightEdges(tess, regUp, vEvent.anEdge, vEvent.anEdge, nil, true)
+		// This may happen if the input polygon is coplanar.
 		return
 	}
-
 	eUp := regUp.eUp
-	if eUp == nil {
-		fmt.Println("WARNING: eUp is nil in connectLeftVertex")
-		return
-	}
-
 	eLo := regLo.eUp
-	if eLo == nil {
-		fmt.Println("WARNING: eLo is nil in connectLeftVertex")
-		return
-	}
 
 	// Try merging with U or L first
-	// Handle nil edge destinations and origins
-	if eUp.dst() == nil || vEvent == nil || eUp.Org == nil {
-		fmt.Println("WARNING: nil values in edgeSign calculation")
-		return
-	}
-
-	// For simple cases, we might need to handle degenerate situations differently
 	if edgeSign(eUp.dst(), vEvent, eUp.Org) == 0 {
 		connectLeftDegenerate(tess, regUp, vEvent)
 		return
@@ -1327,35 +894,17 @@ func connectLeftVertex(tess *tesselator, vEvent *vertex) {
 	// Connect vEvent to rightmost processed vertex of either chain.
 	// e.Dst is the vertex that we will connect to vEvent.
 	var reg *activeRegion
-	// Handle nil edge destinations
-	if eLo.dst() == nil || eUp.dst() == nil {
-		fmt.Println("WARNING: nil edge destinations in vertLeq comparison")
-		return
-	}
-
 	if vertLeq(eLo.dst(), eUp.dst()) {
 		reg = regUp
 	} else {
 		reg = regLo
 	}
 
-	// For simple polygons, we should always try to connect the vertex to create proper triangulation
-	// Only skip connection if we're certain this vertex is outside the polygon
-	if regUp.inside || regLo.fixUpperEdge {
+	if regUp.inside || reg.fixUpperEdge {
 		var eNew *halfEdge
 		if reg == regUp {
-			// Handle nil edges
-			if vEvent.anEdge.Sym == nil || eUp.Lnext == nil {
-				fmt.Println("WARNING: nil edges in tessMeshConnect")
-				return
-			}
 			eNew = tessMeshConnect(tess.mesh, vEvent.anEdge.Sym, eUp.Lnext)
 		} else {
-			// Handle nil edges
-			if eLo.dNext() == nil || vEvent.anEdge == nil {
-				fmt.Println("WARNING: nil edges in tessMeshConnect")
-				return
-			}
 			tempHalfEdge := tessMeshConnect(tess.mesh, eLo.dNext(), vEvent.anEdge)
 			eNew = tempHalfEdge.Sym
 		}
@@ -1367,7 +916,7 @@ func connectLeftVertex(tess *tesselator, vEvent *vertex) {
 		sweepEvent(tess, vEvent)
 	} else {
 		// The new vertex is in a region which does not belong to the polygon.
-		// We don't need to connect this vertex to the rest of the mesh.
+		// We don''t need to connect this vertex to the rest of the mesh.
 		addRightEdges(tess, regUp, vEvent.anEdge, vEvent.anEdge, nil, true)
 	}
 }
@@ -1375,26 +924,15 @@ func connectLeftVertex(tess *tesselator, vEvent *vertex) {
 // sweepEvent does everything necessary when the sweep line crosses a vertex.
 // Updates the mesh and the edge dictionary.
 func sweepEvent(tess *tesselator, vEvent *vertex) {
-	// Handle nil values
-	if tess == nil || vEvent == nil {
-		fmt.Println("WARNING: nil values in sweepEvent")
-		return
-	}
-
 	tess.event = vEvent // for access in EdgeLeq()
 
 	// Check if this vertex is the right endpoint of an edge that is
 	// already in the dictionary.  In this case we don't need to waste
 	// time searching for the location to insert new edges.
 	e := vEvent.anEdge
-	if e == nil {
-		fmt.Println("WARNING: nil anEdge in sweepEvent")
-		return
-	}
-
 	for e.activeRegion == nil {
 		e = e.Onext
-		if e == nil || e == vEvent.anEdge {
+		if e == vEvent.anEdge {
 			// All edges go right -- not incident to any processed edges
 			connectLeftVertex(tess, vEvent)
 			return
@@ -1407,129 +945,21 @@ func sweepEvent(tess *tesselator, vEvent *vertex) {
 	// We mark these faces "inside" or "outside" the polygon according
 	// to their winding number, and delete the edges from the dictionary.
 	// This takes care of all the left-going edges from vEvent.
-	regUp := e.activeRegion
-	if regUp == nil {
-		// This can happen in degenerate cases, just return
-		fmt.Println("WARNING: regUp is nil in sweepEvent, calling connectLeftVertex")
-		connectLeftVertex(tess, vEvent)
-		return
+	regUp := topLeftRegion(tess, e.activeRegion)
+	reg := regUp.below()
+	eTopLeft := reg.eUp
+	eBottomLeft := finishLeftRegions(tess, reg, nil)
+
+	// Next we process all the right-going edges from vEvent.  This
+	// involves adding the edges to the dictionary, and creating the
+	// associated "active regions" which record information about the
+	// regions between adjacent dictionary edges.
+	if eBottomLeft.Onext == eTopLeft {
+		// No right-going edges -- add a temporary "fixable" edge
+		connectRightVertex(tess, regUp, eBottomLeft)
+	} else {
+		addRightEdges(tess, regUp, eBottomLeft.Onext, eTopLeft, eTopLeft, true)
 	}
-
-	regLo := regUp.below()
-	if regLo == nil {
-		// This can happen in degenerate cases, just return
-		fmt.Println("WARNING: regLo is nil in sweepEvent, calling connectLeftVertex")
-		connectLeftVertex(tess, vEvent)
-		return
-	}
-
-	var ePrev *halfEdge
-	for regLo != nil && regLo.eUp != nil && regLo.eUp.dst() == vEvent {
-		ePrev = finishLeftRegions(tess, regLo, regUp)
-		// Add nil checks
-		if regUp == nil {
-			break
-		}
-		regUp = tess.dict.search(regUp).key
-		if regUp == nil {
-			// Dictionary search failed, break out
-			break
-		}
-		regLo = regUp.below()
-	}
-
-	// Then we process all the right-going edges from vEvent.
-	// This is where we transition to the code that handles left-going edges.
-	if ePrev != nil {
-		// ePrev is the edge whose origin is vEvent
-		ePrev = ePrev.Onext
-	}
-	addRightEdges(tess, regUp, ePrev, e, e, true)
-}
-
-// initEdgeDict:
-// We maintain an ordering of edge intersections with the sweep line.
-// This order is maintained in a dynamic dictionary.
-// initEdgeDict initializes the edge dictionary, which maintains the order
-// of edges crossing the sweep line. The dictionary is implemented as a
-// balanced binary search tree, ordered by the x-coordinate of the edge's
-// intersection with the sweep line.
-func initEdgeDict(tess *tesselator) {
-	// Handle nil values
-	if tess == nil {
-		fmt.Println("WARNING: nil tess in initEdgeDict")
-		return
-	}
-
-	tess.dict = newDict(tess)
-
-	// Handle nil mesh
-	if tess.mesh == nil {
-		fmt.Println("WARNING: nil mesh in initEdgeDict")
-		return
-	}
-
-	// Calculate bounding box
-	vHead := &tess.mesh.vHead
-	if vHead.next == vHead {
-		fmt.Println("WARNING: empty mesh in initEdgeDict")
-		return
-	}
-
-	tess.bmin[0] = vHead.next.coords[0]
-	tess.bmin[1] = vHead.next.coords[1]
-	tess.bmax[0] = tess.bmin[0]
-	tess.bmax[1] = tess.bmin[1]
-
-	for v := vHead.next; v != vHead; v = v.next {
-		if v.coords[0] < tess.bmin[0] {
-			tess.bmin[0] = v.coords[0]
-		}
-		if v.coords[0] > tess.bmax[0] {
-			tess.bmax[0] = v.coords[0]
-		}
-		if v.coords[1] < tess.bmin[1] {
-			tess.bmin[1] = v.coords[1]
-		}
-		if v.coords[1] > tess.bmax[1] {
-			tess.bmax[1] = v.coords[1]
-		}
-	}
-
-	w := (tess.bmax[0] - tess.bmin[0])
-	h := (tess.bmax[1] - tess.bmin[1])
-
-	// If the bbox is empty, ensure that sentinels are not coincident by
-	// slightly enlarging it.
-	// TODO: This hack was introduced at https://github.com/memononen/tess/commit/d7c34ac3ff11993b0fc0395fe7d96f4cc75e6bb6.
-	// Is this logic correct?
-	smin := tess.bmin[0] - adjust(w)
-	smax := tess.bmax[0] + adjust(w)
-	tmin := tess.bmin[1] - adjust(h)
-	tmax := tess.bmax[1] + adjust(h)
-
-	// Make sure we have a valid bounding box
-	if smin >= smax {
-		smin = tess.bmin[0] - 0.01
-		smax = tess.bmax[0] + 00.01
-	}
-	if tmin >= tmax {
-		tmin = tess.bmin[1] - 0.01
-		tmax = tess.bmax[1] + 0.01
-	}
-
-	// Create sentinel regions to avoid boundary conditions
-	tess.leftSentinel = newActiveRegion()
-	tess.leftSentinel.sentinel = true
-	tess.rightSentinel = newActiveRegion()
-	tess.rightSentinel.sentinel = true
-
-	// Link sentinels together in the dictionary
-	tess.rightSentinel.nodeUp = tess.dict.insertBefore(nil, tess.rightSentinel)
-	tess.leftSentinel.nodeUp = tess.dict.insertBefore(tess.rightSentinel.nodeUp, tess.leftSentinel)
-
-	addSentinel(tess, smin, smax, tmin)
-	addSentinel(tess, smin, smax, tmax)
 }
 
 // addSentinel makes the sentinel coordinates big enough that they will never be
@@ -1538,49 +968,41 @@ func initEdgeDict(tess *tesselator) {
 // We add two sentinel edges above and below all other edges,
 // to avoid special cases at the top and bottom.
 func addSentinel(tess *tesselator, smin, smax float, t float) {
-	// Handle nil values
-	if tess == nil {
-		fmt.Println("WARNING: nil tess in addSentinel")
-		return
-	}
-
-	reg := newActiveRegion()
-	if reg == nil {
-		fmt.Println("WARNING: failed to create new activeRegion in addSentinel")
-		return
-	}
+	reg := &activeRegion{}
 
 	e := tessMeshMakeEdge(tess.mesh)
-	if e == nil {
-		fmt.Println("WARNING: tessMeshMakeEdge returned nil in addSentinel")
-		return
-	}
 
-	// Get vertices created by tessMeshMakeEdge
-	vOrigin := e.Org
-	vDest := e.Sym.Org
-
-	// Handle nil vertices
-	if vOrigin == nil || vDest == nil {
-		fmt.Println("WARNING: nil vertices in addSentinel")
-		return
-	}
-
-	// Update vertex properties
-	vOrigin.s = smax
-	vOrigin.t = t
-	vOrigin.coords = [3]float{0, 0, 0}
-
-	tess.event = vDest
+	e.Org.s = smax
+	e.Org.t = t
+	e.dst().s = smin
+	e.dst().t = t
+	tess.event = e.dst()
 
 	reg.eUp = e
 	reg.sentinel = true
 	reg.nodeUp = tess.dict.insert(reg)
+}
 
-	// Make sure the node key points to the region
-	if reg.nodeUp != nil {
-		reg.nodeUp.key = reg
-	}
+// initEdgeDict:
+// We maintain an ordering of edge intersections with the sweep line.
+// This order is maintained in a dynamic dictionary.
+func initEdgeDict(tess *tesselator) {
+	tess.dict = newDict(tess)
+
+	w := (tess.bmax[0] - tess.bmin[0])
+	h := (tess.bmax[1] - tess.bmin[1])
+
+	// If the bbox is empty, ensure that sentinels are not coincident by
+	// slightly enlarging it.
+	// TODO: This hack was introduced at https://github.com/memononen/libtess2/commit/d7c34ac3ff11993b0fc0395fe7d96f4cc75e6bb6.
+	// Is this logic correct?
+	smin := tess.bmin[0] - adjust(w)
+	smax := tess.bmax[0] + adjust(w)
+	tmin := tess.bmin[1] - adjust(h)
+	tmax := tess.bmax[1] + adjust(h)
+
+	addSentinel(tess, smin, smax, tmin)
+	addSentinel(tess, smin, smax, tmax)
 }
 
 func doneEdgeDict(tess *tesselator) {
@@ -1663,23 +1085,12 @@ func removeDegenerateFaces(tess *tesselator, mesh *mesh) {
 	for f := mesh.fHead.next; f != &mesh.fHead; f = fNext {
 		fNext = f.next
 		e := f.anEdge
-
-		// Add defensive nil checks
-		if e == nil || e.Lnext == nil || e.Onext == nil {
-			continue
-		}
-
-		// Skip if already processed or invalid
-		if e.Lnext == e {
-			continue
-		}
+		assert(e.Lnext != e)
 
 		if e.Lnext.Lnext == e {
 			// A face with only two edges
-			if e.Onext != nil && e != nil {
-				addWinding(e.Onext, e)
-				tessMeshDelete(tess.mesh, e)
-			}
+			addWinding(e.Onext, e)
+			tessMeshDelete(tess.mesh, e)
 		}
 	}
 }
@@ -1717,8 +1128,8 @@ func tessComputeInterior(tess *tesselator) {
 			// simplifies the code (see ConnectLeftDegenerate), and is also
 			// important for correct handling of certain degenerate cases.
 			// For example, suppose there are two identical edges A and B
-			// that belong to different contours (so without this code they would be
-			// processed by separate sweep events).  Suppose another edge C
+			// that belong to different contours (so without this code they would
+			// be processed by separate sweep events).  Suppose another edge C
 			// crosses A and B from above.  When A is processed, we split it
 			// at its intersection point with C.  However this also splits C,
 			// so when we insert B we may compute a slightly different
@@ -1726,10 +1137,7 @@ func tessComputeInterior(tess *tesselator) {
 			// gap between them.  This kind of error is especially obvious
 			// when using boundary extraction (TESS_BOUNDARY_ONLY).
 			vNext = tess.pq.extractMin()
-			// Add a nil check to prevent panic
-			if v.anEdge != nil && vNext.anEdge != nil {
-				spliceMergeVertices(tess, v.anEdge, vNext.anEdge)
-			}
+			spliceMergeVertices(tess, v.anEdge, vNext.anEdge)
 		}
 		sweepEvent(tess, v)
 	}

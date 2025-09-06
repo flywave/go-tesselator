@@ -2,7 +2,6 @@ package tesselator
 
 import (
 	"fmt"
-	"math"
 )
 
 // WindingRule:
@@ -18,21 +17,20 @@ const (
 	WindingRuleAbsGeqTwo
 )
 
-func (tess *tesselator) isInside(n int) bool {
-	result := false
-	switch tess.windingRule {
+func (w WindingRule) isInside(n int) bool {
+	switch w {
 	case WindingRuleOdd:
-		result = (n & 1) != 0
+		return (n & 1) != 0
 	case WindingRuleNonzero:
-		result = (n != 0)
+		return (n != 0)
 	case WindingRulePositive:
-		result = (n > 0)
+		return (n > 0)
 	case WindingRuleNegative:
-		result = (n < 0)
+		return (n < 0)
 	case WindingRuleAbsGeqTwo:
-		result = (n >= 2) || (n <= -2)
+		return (n >= 2) || (n <= -2)
 	}
-	return result
+	panic("not reached")
 }
 
 // The contents of the tessGetElements() depends on element type being passed to tessTesselate().
@@ -129,11 +127,9 @@ type tesselator struct {
 
 	windingRule WindingRule // rule for determining polygon interior
 
-	dict          *dict         // edge dictionary for sweep line
-	pq            *pq           // priority queue of vertex events
-	event         *vertex       // current sweep event being processed
-	leftSentinel  *activeRegion // left sentinel region for edge dict
-	rightSentinel *activeRegion // right sentinel region for edge dict
+	dict  *dict   // edge dictionary for sweep line
+	pq    *pq     // priority queue of vertex events
+	event *vertex // current sweep event being processed
 
 	vertexIndexCounter index
 
@@ -153,55 +149,29 @@ type Vertex struct {
 type Contour []Vertex
 
 func Tesselate(contours []Contour, windingRule WindingRule) ([]int, []Vertex, error) {
-	// Debug: Starting tesselation
-	fmt.Println("Tesselate: Starting tesselation")
-	fmt.Printf("Tesselate: Number of contours: %d\n", len(contours))
-	fmt.Printf("Tesselate: Winding rule: %d\n", windingRule)
-
-	t := &tesselator{}
-	// Check for invalid values in input
-	const maxAbsValue = 1e+37 // Threshold for large values
-	for _, contour := range contours {
-		for _, v := range contour {
-			if math.IsNaN(float64(v.X)) || math.IsNaN(float64(v.Y)) || math.IsNaN(float64(v.Z)) {
-				fmt.Println("Tesselate: Error - NaN value in contour point")
-				return nil, nil, fmt.Errorf("tess: NaN value in contour point")
-			}
-			if math.Abs(float64(v.X)) > maxAbsValue || math.Abs(float64(v.Y)) > maxAbsValue || math.Abs(float64(v.Z)) > maxAbsValue {
-				fmt.Println("Tesselate: Error - value too large in contour point")
-				return nil, nil, fmt.Errorf("tess: value too large in contour point")
-			}
+	// 预处理轮廓，过滤掉顶点数少于3的轮廓
+	validContours := make([]Contour, 0, len(contours))
+	for _, c := range contours {
+		// 只有顶点数大于等于3的轮廓才能进行三角剖分
+		if len(c) >= 3 {
+			validContours = append(validContours, c)
 		}
 	}
 
-	for i, c := range contours {
-		if len(c) < 3 {
-			fmt.Printf("Tesselate: Error - contour %d has fewer than 3 vertices\n", i)
-			return nil, nil, fmt.Errorf("tess: contour %d has fewer than 3 vertices", i)
-		}
-		fmt.Printf("Tesselate: Adding contour %d with %d vertices\n", i, len(c))
-		fs := make([]float32, len(c)*3)
-		for j, v := range c {
-			fs[3*j] = v.X
-			fs[3*j+1] = v.Y
-			fs[3*j+2] = v.Z
-		}
-		tessAddContour(t, 3, fs)
-	}
-
-	// Debug: Check if mesh is created
-	if t.mesh == nil {
-		fmt.Println("Tesselate: Error - mesh is nil after adding contours")
+	// 如果没有有效的轮廓，直接返回空结果
+	if len(validContours) == 0 {
 		return []int{}, []Vertex{}, nil
 	}
 
-	// Debug: Print contour information
-	fmt.Printf("Tesselate: Processing %d contours\n", len(contours))
-	if len(contours) > 0 {
-		fmt.Printf("Tesselate: First contour has %d vertices\n", len(contours[0]))
-		for i, v := range contours[0] {
-			fmt.Printf("Tesselate: Vertex %d: (%.2f, %.2f)\n", i, v.X, v.Y)
+	t := &tesselator{}
+	for _, c := range validContours {
+		fs := make([]float32, len(c)*3)
+		for i, v := range c {
+			fs[3*i] = v.X
+			fs[3*i+1] = v.Y
+			fs[3*i+2] = v.Z
 		}
+		tessAddContour(t, 3, fs)
 	}
 
 	const (
@@ -209,31 +179,13 @@ func Tesselate(contours []Contour, windingRule WindingRule) ([]int, []Vertex, er
 		vertexSize = 3
 	)
 
-	// Debug: Print mesh information
-	fmt.Println("Tesselate: Calling tessTesselate")
-
 	if !tessTesselate(t,
 		windingRule,
 		elementTypePolygons,
 		polySize,
 		vertexSize,
 		nil) {
-		fmt.Println("Tesselate: Error - tessTesselate failed")
-		return nil, nil, fmt.Errorf("tess: tessTesselate failed")
-	}
-
-	// Debug: Check vertex and element counts
-	fmt.Printf("Tesselate: After tessTesselate - vertexCount=%d, elementCount=%d\n", t.vertexCount, t.elementCount)
-
-	// Debug: Check if any faces are marked as inside
-	if t.mesh != nil {
-		insideCount := 0
-		for f := t.mesh.fHead.next; f != &t.mesh.fHead; f = f.next {
-			if f.inside {
-				insideCount++
-			}
-		}
-		fmt.Printf("Tesselate: Found %d faces marked as inside\n", insideCount)
+		return nil, nil, fmt.Errorf("libtess2: tessTesselate failed")
 	}
 
 	vertices := make([]Vertex, t.vertexCount)
@@ -244,13 +196,9 @@ func Tesselate(contours []Contour, windingRule WindingRule) ([]int, []Vertex, er
 	}
 
 	elements := make([]int, len(t.elements))
-	for i := range elements {
-		elements[i] = int(t.elements[i])
+	for i, e := range t.elements {
+		elements[i] = int(e)
 	}
-
-	// Debug: Print final results
-	fmt.Printf("Tesselate: Returning %d elements and %d vertices\n", len(elements), len(vertices))
-
 	return elements, vertices, nil
 }
 
@@ -378,19 +326,14 @@ func checkOrientation(tess *tesselator) {
 		if e.winding <= 0 {
 			continue
 		}
-
-		// Use proper do-while loop semantics
-		// In a do-while loop, the body is executed at least once before checking the condition
-		startEdge := e
 		for {
 			area += (e.Org.s - e.dst().s) * (e.Org.t + e.dst().t)
 			e = e.Lnext
-			if e == startEdge {
+			if e == f.anEdge {
 				break
 			}
 		}
 	}
-
 	if area < 0 {
 		// Reverse the orientation by flipping all the t-coordinates
 		for v := vHead.next; v != vHead; v = v.next {
@@ -423,10 +366,6 @@ func tessProjectPolygon(tess *tesselator) {
 	norm[2] = tess.normal[2]
 	if norm[0] == 0 && norm[1] == 0 && norm[2] == 0 {
 		computeNormal(tess, norm)
-		computedNormal = true
-	}
-	if math.IsNaN(float64(norm[0])) || math.IsNaN(float64(norm[1])) || math.IsNaN(float64(norm[2])) {
-		norm = []float{0, 0, 1}
 		computedNormal = true
 	}
 	sUnit := tess.sUnit[:]
@@ -794,24 +733,19 @@ func outputContours(tess *tesselator, mesh *mesh, vertexSize int) {
 //	size - number of coordinates per vertex. Must be 2 or 3.
 //	vertices - vertices array
 func tessAddContour(tess *tesselator, size int, vertices []float32) {
-	fmt.Println("tessAddContour: Adding contour")
 	if tess.mesh == nil {
-		fmt.Println("tessAddContour: Creating new mesh")
 		tess.mesh = tessMeshNewMesh()
 	}
 
 	if size < 2 {
 		size = 2
-		fmt.Println("tessAddContour: Setting size to 2")
 	}
 	if size > 3 {
 		size = 3
-		fmt.Println("tessAddContour: Setting size to 3")
 	}
 
 	var e *halfEdge
 	numVertices := len(vertices) / size
-	fmt.Printf("tessAddContour: Number of vertices in contour: %d\n", numVertices)
 	src := vertices
 	for i := 0; i < numVertices; i++ {
 		coords := src
@@ -819,13 +753,11 @@ func tessAddContour(tess *tesselator, size int, vertices []float32) {
 
 		if e == nil {
 			// Make a self-loop (one vertex, one edge).
-			fmt.Println("tessAddContour: Creating first edge (self-loop)")
 			e = tessMeshMakeEdge(tess.mesh)
 			tessMeshSplice(tess.mesh, e, e.Sym)
 		} else {
 			// Create a new vertex and edge which immediately follow e
 			// in the ordering around the left face.
-			fmt.Println("tessAddContour: Splitting edge and moving to next")
 			tessMeshSplitEdge(tess.mesh, e)
 			e = e.Lnext
 		}
@@ -840,7 +772,6 @@ func tessAddContour(tess *tesselator, size int, vertices []float32) {
 		}
 		// Store the insertion number so that the vertex can be later recognized.
 		e.Org.idx = tess.vertexIndexCounter
-		fmt.Printf("tessAddContour: Added vertex %d: (%.2f, %.2f, %.2f)\n", tess.vertexIndexCounter, coords[0], coords[1], e.Org.coords[2])
 		tess.vertexIndexCounter++
 
 		// The winding of an edge says how the winding number changes as we
@@ -850,7 +781,6 @@ func tessAddContour(tess *tesselator, size int, vertices []float32) {
 		e.winding = 1
 		e.Sym.winding = -1
 	}
-	fmt.Println("tessAddContour: Finished adding contour")
 }
 
 // tessTesselate: - tesselate contours.
