@@ -32,10 +32,8 @@ func TestTessellateAndGenerateSVG(t *testing.T) {
 		t.Errorf("SVG file was not created: %s", svgFilename)
 	}
 
-	// 保留生成的文件并移动到 assets 文件夹
-	// os.Rename(svgFilename, "assets/"+svgFilename)
-	// 注意：在实际测试中我们不移动文件，以免影响其他测试
-	// 这里注释掉移动操作，但在 README 中展示时我们会手动移动文件
+	// 清理生成的文件
+	defer os.Remove(svgFilename)
 }
 
 // TestTessellateAndGenerateSVGWithHole 测试带孔的多边形
@@ -75,8 +73,8 @@ func TestTessellateAndGenerateSVGWithHole(t *testing.T) {
 		t.Errorf("SVG file was not created: %s", svgFilename)
 	}
 
-	// 保留生成的文件并移动到 assets 文件夹
-	// os.Rename(svgFilename, "assets/"+svgFilename)
+	// 清理生成的文件
+	defer os.Remove(svgFilename)
 }
 
 // TestTessellateAndGenerateSVGWithMultipleContours 测试多个独立轮廓
@@ -115,8 +113,8 @@ func TestTessellateAndGenerateSVGWithMultipleContours(t *testing.T) {
 		t.Errorf("SVG file was not created: %s", svgFilename)
 	}
 
-	// 保留生成的文件并移动到 assets 文件夹
-	// os.Rename(svgFilename, "assets/"+svgFilename)
+	// 清理生成的文件
+	defer os.Remove(svgFilename)
 }
 
 // TestTessellateAndGenerateSVGComplexPolygon 测试复杂多边形（五角星形）
@@ -162,8 +160,8 @@ func TestTessellateAndGenerateSVGComplexPolygon(t *testing.T) {
 		t.Errorf("SVG file was not created: %s", svgFilename)
 	}
 
-	// 保留生成的文件并移动到 assets 文件夹
-	// os.Rename(svgFilename, "assets/"+svgFilename)
+	// 清理生成的文件
+	defer os.Remove(svgFilename)
 }
 
 // TestTessellateAndGenerateSVGRandomPolygon 测试随机生成的复杂多边形
@@ -194,6 +192,6 @@ func TestTessellateAndGenerateSVGRandomPolygon(t *testing.T) {
 		t.Errorf("SVG file was not created: %s", svgFilename)
 	}
 
-	// 保留生成的文件并移动到 assets 文件夹
-	// os.Rename(svgFilename, "assets/"+svgFilename)
+	// 清理生成的文件
+	defer os.Remove(svgFilename)
 }
